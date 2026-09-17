@@ -1,0 +1,156 @@
+{
+    "name": "Rhythm Gacha",
+    "code": "rhythm_gacha",
+    "version": "1.0.50",
+    "description": "二次元赛博音游抽卡、体力与背包生态系统",
+    "author": "Reia",
+    "require": {
+        "xboard": ">=1.0.0"
+    },
+    "config": {
+        "sync_interval_seconds": {
+            "type": "number",
+            "default": 300,
+            "label": "自动巡检同步频率 (秒)",
+            "description": "后台全自动巡检战绩的间隔时间(秒)。例如：5分钟填300，10分钟填600，默认300秒"
+        },
+        "gacha_web_url": {
+            "type": "string",
+            "default": "",
+            "label": "抽卡与活动终端 Web 地址",
+            "description": "Telegram 机器人中点击【祈愿抽卡】按钮跳转的完整网页 URL"
+        },
+        "osu_api_client_id": {
+            "type": "string",
+            "default": "",
+            "label": "osu! OAuth Client ID",
+            "description": "在 osu! 官网申请的 Application Client ID"
+        },
+        "osu_api_client_secret": {
+            "type": "string",
+            "default": "",
+            "label": "osu! OAuth Client Secret",
+            "description": "在 osu! 官网申请的 Application Client Secret 密钥"
+        },
+        "ai_vision_base_url": {
+            "type": "string",
+            "default": "https://api.openai.com/v1",
+            "label": "多模态 AI API Base URL",
+            "description": "兼容 OpenAI 格式的接口端点(如 OneAPI、DeepSeek、Qwen-VL 中转站)"
+        },
+        "ai_vision_api_key": {
+            "type": "string",
+            "default": "",
+            "label": "多模态 AI API Key",
+            "description": "多模态视觉模型调用的 API 密钥"
+        },
+        "ai_vision_model": {
+            "type": "string",
+            "default": "gpt-4o-mini",
+            "label": "多模态视觉模型名称",
+            "description": "如: gpt-4o-mini, qwen-vl-max, claude-3-5-sonnet 等"
+        },
+        "photo_time_window_seconds": {
+            "type": "number",
+            "default": 60,
+            "label": "截图拍摄时效窗口 (秒)",
+            "description": "图片底层拍摄时间与服务器当前时间的允许最大差值，默认 60 秒"
+        },
+        "tg_bot_enable": {
+            "type": "boolean",
+            "default": false,
+            "label": "启用独立 Telegram 机器人",
+            "description": "开启后将启用独立的律动出勤与抽卡专属电报机器人"
+        },
+        "tg_bot_token": {
+            "type": "string",
+            "default": "",
+            "label": "Telegram 机器人令牌 (Token)",
+            "description": "在 @BotFather 申请的独立机器人 Token (如 123456:ABC-DEF...)"
+        },
+        "tg_webhook_base_url": {
+            "type": "string",
+            "default": "",
+            "label": "Telegram Webhook Base URL",
+            "description": "公网可访问的基础域名(必须HTTPS)，例如: https://example.com"
+        },
+        "bundled_pass_plan_ids": {
+            "type": "string",
+            "default": "3,4,5,24,25",
+            "label": "附赠月票的套餐ID(逗号分隔)",
+            "description": "购买这些套餐后将自动赠送30天月票，填入套餐ID并用逗号隔开，如: 3,4,5,24,25"
+        },
+        "monthly_pass_price": {
+            "type": "number",
+            "default": 9.9,
+            "label": "月票单独购买价格(元)",
+            "description": "不买套餐单独氪金购买30天月票的价格"
+        },
+        "monthly_pass_days": {
+            "type": "number",
+            "default": 30,
+            "label": "每次月票生效天数",
+            "description": "单次获得月票增加的天数，默认 30 天"
+        },
+        "stamina_base_max": {
+            "type": "number",
+            "default": 10,
+            "label": "基础体力上限",
+            "description": "普通玩家自然恢复的体力上限"
+        },
+        "stamina_vip_max": {
+            "type": "number",
+            "default": 20,
+            "label": "月票体力上限",
+            "description": "持有月票玩家的体力上限"
+        },
+        "stamina_recover_mins": {
+            "type": "number",
+            "default": 45,
+            "label": "体力恢复周期(分钟)",
+            "description": "恢复1点体力需要的冷却时间"
+        },
+        "gacha_price_single": {
+            "type": "number",
+            "default": 250,
+            "label": "单抽宝石价格",
+            "description": "进行一次单抽消耗的宝石数"
+        },
+        "gacha_pity_hard": {
+            "type": "number",
+            "default": 90,
+            "label": "五星硬保底抽数",
+            "description": "连续未出5星时强制出5星的抽数"
+        },
+        "reward_gem_l5": {
+            "type": "number",
+            "default": 100,
+            "label": "Level 5 宝石奖励 (SS及以上)",
+            "description": "包含 SS, SSS, SSS+, AP, FC"
+        },
+        "reward_gem_l4": {
+            "type": "number",
+            "default": 75,
+            "label": "Level 4 宝石奖励 (S级)",
+            "description": "包含 S, S+"
+        },
+        "reward_gem_l3": {
+            "type": "number",
+            "default": 50,
+            "label": "Level 3 宝石奖励 (A级)",
+            "description": "包含 A, A+"
+        },
+        "reward_gem_l2": {
+            "type": "number",
+            "default": 25,
+            "label": "Level 2 宝石奖励 (B级)",
+            "description": "包含 B, B+"
+        },
+        "reward_gem_l1": {
+            "type": "number",
+            "default": 10,
+            "label": "Level 1 宝石奖励 (C级及以下)",
+            "description": "包含 C, D 等基础通关"
+        }
+    }
+}

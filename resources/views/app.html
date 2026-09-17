@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>REIA NEXT · 律动跃迁特别企划</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    :root {
+      --bg: #06090f;
+      --panel-bg: rgba(14, 20, 32, 0.88);
+      --border: rgba(56, 189, 248, 0.2);
+      --border-glow: rgba(56, 189, 248, 0.6);
+      --accent: #38bdf8;
+      --pink: #f43f5e;
+      --gold: #fbbf24;
+      --purple: #c084fc;
+      --green: #34d399;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15), transparent 50%),
+                        radial-gradient(circle at 100% 100%, rgba(244, 63, 94, 0.1), transparent 40%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .game-container { width: 100%; max-width: 960px; }
+
+    /* 游戏客户端级 HUD 顶栏 */
+    .game-hud {
+      background: var(--panel-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .hud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .user-tag {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hud-assets {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .asset-slot {
+      background: rgba(8, 12, 22, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+    .asset-label { font-size: 11px; color: var(--text-muted); }
+    .asset-val { font-size: 20px; font-weight: 900; margin-top: 2px; }
+
+    /* 活动主标题 Banner */
+    .event-stage-banner {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.25) 0%, rgba(56, 189, 248, 0.18) 100%);
+      border: 1px solid var(--border-glow);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .stage-tag {
+      background: linear-gradient(90deg, #f43f5e, #ec4899);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .stage-title {
+      font-size: 24px;
+      font-weight: 900;
+      margin: 0 0 6px 0;
+      background: linear-gradient(90deg, #fff, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* 游戏大厅导航项 */
+    .game-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .nav-btn {
+      background: rgba(14, 20, 32, 0.6);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.25s;
+    }
+    .nav-btn.active {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
+    }
+
+    .gacha-pool-box {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .pool-tabs { display: flex; gap: 12px; margin-bottom: 16px; }
+    .pool-tab-item {
+      flex: 1;
+      padding: 16px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: rgba(8, 12, 22, 0.6);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pool-tab-item.active {
+      border-color: var(--pink);
+      background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(8, 12, 22, 0.8));
+    }
+    .btn-warp {
+      background: linear-gradient(135deg, #f43f5e, #a855f7);
+      color: #fff;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(244, 63, 94, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-warp:active { transform: scale(0.97); }
+
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    input, select {
+      background: #080d1a;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      outline: none;
+    }
+    input:focus { border-color: var(--accent); }
+
+    /* 官方全景封面战绩卡 */
+    .score-banner-card {
+      position: relative;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background-size: cover;
+      background-position: center right;
+      transition: all 0.2s;
+    }
+    .score-banner-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-glow);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    }
+    .score-banner-overlay {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: linear-gradient(90deg, rgba(8,12,22,0.96) 0%, rgba(8,12,22,0.86) 55%, rgba(8,12,22,0.35) 100%);
+    }
+
+    /* ================= ⭐ 核心改动：右下角悬浮动态 WebP 加载器 ================= */
+    .corner-loading-hud {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999999;
+      background: rgba(12, 18, 30, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(234, 88, 12, 0.5); /* 贴合动图主题的橙金微光 */
+      border-radius: 14px; /* 优雅的卡片圆角，绝不切圆图片 */
+      padding: 10px 18px 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(234, 88, 12, 0.25);
+      transform: translateY(30px) scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .corner-loading-hud.active {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+     .corner-loading-anim-box {
+      width: 50px;
+      height: 50px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent; /* 背景透明 */
+      border: none;            /* 彻底移除内圈线框 */
+    }
+     .corner-loading-img {
+      width: 64px;
+      height: 64px;
+      object-fit: contain; /* 完整保留动图所有菱形、星星和 LOADING 文字 */
+      border-radius: 0;   /* 彻底移除之前的切圆属性！ */
+      filter: drop-shadow(0 0 6px rgba(234, 88, 12, 0.6));
+    }
+     .corner-loading-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+     .corner-loading-sub {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #fb923c;
+      letter-spacing: 1px;
+    }
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: #f97316;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #f97316;
+      animation: dotBlink 1.2s infinite ease-in-out;
+    }
+    @keyframes dotBlink {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+     .corner-loading-text {
+      font-size: 13px;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    /* 手机端贴边优化，防溢出 */
+    @media (max-width: 640px) {
+      .corner-loading-hud {
+        bottom: 16px;
+        right: 16px;
+        max-width: calc(100vw - 32px);
+      }
+    }
+
+    /* 抽卡全景视频插槽 */
+    .gacha-video-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 999999;
+      align-items: center;
+      justify-content: center;
+    }
+    .gacha-video-el { width: 100%; height: 100%; object-fit: cover; }
+    .skip-video-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid #fff;
+      color: #fff;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    /* 抽卡翻牌战利品结算弹窗 */
+    .gacha-result-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(20px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .gacha-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+      width: 100%;
+      max-width: 780px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .card-drop {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 18px 10px;
+      text-align: center;
+      border: 2px solid #334155;
+      animation: dropPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes dropPop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .star-5 { border-color: var(--gold); box-shadow: 0 0 20px rgba(251,191,36,0.4); }
+    .star-4 { border-color: var(--purple); box-shadow: 0 0 14px rgba(192,132,252,0.3); }
+    .star-3 { border-color: var(--accent); }
+
+    /* 通用模态弹窗 */
+    .modal-mask {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-body {
+      background: #0f172a;
+      border: 1px solid var(--border-glow);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    /* 分页控制器样式 */
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .page-btn {
+      background: #1e293b;
+      color: #fff;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-container">
+
+  <!-- HUD 顶部状态栏 -->
+  <div class="game-hud">
+    <div class="hud-header">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 16px; font-weight: 900;" id="u-email">-</span>
+        <span class="user-tag" id="u-role-badge">特权接入</span>
+        <span class="user-tag" id="u-passport-badge" style="cursor: pointer; color: var(--gold); border-color: var(--gold);" onclick="openPassportModal()">🎫 获取月票</span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button id="btn-admin-gems" style="display: none; background: var(--gold); color: #000; font-size: 12px; padding: 5px 12px; border-radius: 20px;" onclick="handleGetTestGems()">💎 注入钻(+2500)</button>
+        <button style="background: #1e293b; font-size: 12px; padding: 5px 12px; border-radius: 20px;" onclick="handleLogout()">登出</button>
+      </div>
+    </div>
+
+    <!-- 资产数据矩阵 -->
+    <div class="hud-assets">
+      <div class="asset-slot">
+        <div class="asset-label">🌐 专线剩余流量</div>
+        <div class="asset-val" id="u-traffic" style="color: var(--accent);">- GB</div>
+        <div style="font-size: 11px; color: var(--text-muted);" id="u-traffic-detail">已用 - / 总计 -</div>
+      </div>
+      <div class="asset-slot">
+        <div class="asset-label">💎 储备宝石</div>
+        <div class="asset-val" id="p-gems" style="color: var(--gold);">0</div>
+        <div style="font-size: 11px; color: var(--text-muted);">用于祈愿跃迁抽卡</div>
+      </div>
+      <div class="asset-slot">
+        <div class="asset-label">⚡ 律动体力储备</div>
+        <div class="asset-val" id="p-stamina" style="color: var(--green);">- / -</div>
+        <div style="font-size: 11px; color: var(--text-muted);" id="p-stamina-timer">-</div>
+      </div>
+      <div class="asset-slot">
+        <div class="asset-label">🎯 UP池保底进度</div>
+        <div class="asset-val" id="p-pity" style="color: var(--purple);">0 <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">/ 90</span></div>
+        <div style="width: 100%; height: 4px; background: #1e293b; border-radius: 4px; overflow: hidden; margin-top: 6px;">
+          <div id="pity-progress" style="height: 100%; background: linear-gradient(90deg, var(--accent), #818cf8); width: 0%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 活动横幅 -->
+  <div class="event-stage-banner">
+    <div class="stage-tag">SEASON EVENT 2026</div>
+    <h1 class="stage-title">虚空共鸣 · 律动跃迁特别企划</h1>
+    <div style="font-size: 13px; color: var(--text-muted);">出勤打歌即可将操作判定转化为赛博算力！全自动对接 osu! 与 舞萌 DX 云端战绩。抽取五星限定专线特权与海量物资！</div>
+  </div>
+
+  <!-- 游戏主导航 -->
+  <div class="game-nav">
+    <div class="nav-btn active" onclick="switchTab('gacha')">🎰 祈愿跃迁 (抽卡)</div>
+    <div class="nav-btn" onclick="switchTab('stages')">🎛️ 律动出勤 (音游绑定与同步)</div>
+    <div class="nav-btn" onclick="switchTab('backpack')">🧰 战术背包 (<span id="backpack-count">0</span>)</div>
+    <div class="nav-btn" onclick="switchTab('records')">📜 全量出勤纪要</div>
+  </div>
+
+  <!-- 视图 1: 祈愿抽卡 -->
+  <div id="view-gacha">
+    <div class="gacha-pool-box">
+      <div class="pool-tabs">
+        <div class="pool-tab-item active" id="tab-up" onclick="choosePool(true)">
+          <div style="font-size: 15px; font-weight: bold; margin-bottom: 4px;">🌟 【UP限定】5G虚空核心突破</div>
+          <div style="font-size: 12px; color: var(--gold);">当期概率提升 50%：【UR限定】5G虚空核心 (5★)</div>
+        </div>
+        <div class="pool-tab-item" id="tab-std" onclick="choosePool(false)">
+          <div style="font-size: 15px; font-weight: bold; margin-bottom: 4px;">🌌 【常驻】赛博基石物资池</div>
+          <div style="font-size: 12px; color: var(--accent);">包含量子跃迁矩阵、超频数据核等全量战略物资</div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: rgba(8,12,22,0.8); padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
+        <div>
+          <div style="font-size: 13px;">规则：<strong>90 抽硬保底必出 5★</strong> (歪卡下次 100% 必出 UP)</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">大保底状态：<span id="p-guaranteed" style="color: var(--gold); font-weight: bold;">-</span></div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-warp" style="background: #1e293b; box-shadow: none;" onclick="triggerGacha(1)">单次共鸣 (250 💎)</button>
+          <button class="btn-warp" onclick="triggerGacha(10)">十连跃迁 (2500 💎)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 视图 2: 出勤舞台 -->
+  <div id="view-stages" style="display: none;">
+    <div class="gacha-pool-box">
+      <h3 style="margin-top: 0;">🎛️ 音游出勤舞台</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+        
+        <!-- 舞萌 DX -->
+        <div class="asset-slot" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold; color: var(--accent); margin-bottom: 8px;">
+              <span>舞萌 DX (水鱼查分器)</span>
+              <span style="font-size: 11px; cursor: pointer; color: var(--text-muted);" onclick="alert('若水鱼开启了隐私，请在水鱼个人资料中获取 Import-Token 填入绑定！')">❓ 隐私提示</span>
+            </div>
+            <input type="text" id="bind-maimai" placeholder="水鱼用户名 / QQ / Token" style="width: 100%; margin-bottom: 10px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px; color: var(--text-muted);" id="bound-maimai-label">未绑定</span>
+            <button onclick="handleBindGame('maimai')">验证绑定</button>
+          </div>
+        </div>
+
+        <!-- hololive 截图出勤 -->
+        <div class="asset-slot" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold; color: #818cf8; margin-bottom: 8px;">
+              <span>📸 hololive 截图出勤</span>
+              <span style="font-size: 11px; color: var(--gold);">⚡ 60s 内存防伪</span>
+            </div>
+            <input type="file" id="holo-file" accept="image/png" style="width: 100%; margin-bottom: 10px; font-size: 12px; padding: 6px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px; color: var(--text-muted);">限 PNG 原图</span>
+            <button class="btn-warp" style="padding: 6px 16px; font-size: 12px; box-shadow: none;" onclick="uploadHoloScreenshot()">上传核验</button>
+          </div>
+        </div>
+
+        <!-- osu! -->
+        <div class="asset-slot" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold; color: #ff66aa; margin-bottom: 8px;">
+              <span>osu! (官方账号)</span>
+              <span style="font-size: 11px; cursor: pointer; color: #ff66aa;" onclick="startOsuOAuth()">🔗 官方授权</span>
+            </div>
+            <input type="text" id="bind-osu" placeholder="输入用户名或数字 UID" style="width: 100%; margin-bottom: 10px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px; color: var(--text-muted);" id="bound-osu-label">未绑定</span>
+            <button style="background: #ff66aa;" onclick="handleBindGame('osu')">保存绑定</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 快速出勤结算通道 -->
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <select id="sync-game-type" style="width: 220px;">
+            <option value="osu">osu! (近 24 小时成绩)</option>
+            <option value="maimai">舞萌 DX (水鱼查分器)</option>
+          </select>
+          <button class="btn-warp" style="padding: 10px 20px; font-size: 14px;" onclick="handleSyncScore()">⚡ 发起成绩核算</button>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted);">💡 消耗 1 点体力。体力不足时强制记录但不发钻 (防囤积)。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 视图 3: 背包 -->
+  <div id="view-backpack" style="display: none;">
+    <div class="gacha-pool-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0;">🧰 战术物资仓库</h3>
+        <button style="background: #1e293b; font-size: 12px;" onclick="loadBackpack()">刷新仓库</button>
+      </div>
+      <div id="backpack-list"></div>
+    </div>
+  </div>
+
+  <!-- 视图 4: 战绩明细 (支持分类与分页) -->
+  <div id="view-records" style="display: none;">
+    <div class="gacha-pool-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+        <h3 style="margin: 0;">📜 全量出勤纪要</h3>
+        
+        <!-- 分类筛选与条数控制 -->
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <select id="record-filter-game" onchange="changeRecordFilter()" style="font-size: 12px; padding: 4px 8px;">
+            <option value="all">🌐 全部游戏</option>
+            <option value="osu">🎮 osu!</option>
+            <option value="maimai">🥁 舞萌 DX</option>
+            <option value="hololive">📸 hololive Dreams</option>
+          </select>
+
+          <select id="record-page-limit" onchange="changeRecordLimit()" style="font-size: 12px; padding: 4px 8px;">
+            <option value="5">每页 5 条</option>
+            <option value="10" selected>每页 10 条</option>
+            <option value="20">每页 20 条</option>
+          </select>
+
+          <button style="background: #1e293b; font-size: 12px; padding: 4px 10px;" onclick="loadRecordLogs()">🔄 刷新</button>
+        </div>
+      </div>
+
+      <!-- 战绩列表渲染区 (带点击查看详情引导) -->
+      <div id="records-list"></div>
+
+      <!-- 分页控制栏 -->
+      <div class="pagination-bar">
+        <button id="btn-prev-page" class="page-btn" onclick="goToPage(-1)">⬅️ 上一页</button>
+        <span id="page-indicator" style="font-size: 13px; color: var(--text-muted); font-weight: bold;">第 1 / 1 页 (共 0 条)</span>
+        <button id="btn-next-page" class="page-btn" onclick="goToPage(1)">下一页 ➡️</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= ⭐ 核心：右下角悬浮动态 WebP 加载器 ================= -->
+<!-- ⭐ 优化后的右下角赛博 HUD 加载指示器 -->
+<div id="corner-loading" class="corner-loading-hud">
+  <div class="corner-loading-anim-box">
+    <img class="corner-loading-img" src="/api/v1/rhythm-gacha/asset/loading.webp" alt="Loading...">
+  </div>
+  <div class="corner-loading-content">
+    <div class="corner-loading-sub">
+      <span class="pulse-dot"></span>
+      <span>NETWORK SYNCING</span>
+    </div>
+    <div id="corner-loading-text" class="corner-loading-text">正在同步中枢节点...</div>
+  </div>
+</div>
+
+<!-- 抽卡全景视频插槽 -->
+<div id="gacha-video-box" class="gacha-video-overlay">
+  <button class="skip-video-btn" onclick="skipGachaVideo()">跳过跃迁 ⏩</button>
+  <video id="gacha-video-el" class="gacha-video-el" playsinline webkit-playsinline></video>
+</div>
+
+<!-- 抽卡翻牌战利品结算弹窗 -->
+<div id="gacha-result-modal" class="gacha-result-modal">
+  <div style="text-align: center; width: 100%; max-width: 820px;">
+    <h2 style="color: var(--gold); margin-bottom: 16px; justify-content: center;">🎉 跃迁共鸣完成</h2>
+    <div id="gacha-reveal-grid" class="gacha-grid"></div>
+    <div style="margin-top: 20px;">
+      <button class="btn-warp" style="padding: 10px 32px;" onclick="closeGachaResult()">确认收纳</button>
+    </div>
+  </div>
+</div>
+
+<!-- 物资核销二次确认模态窗 -->
+<div id="redeem-modal" class="modal-mask">
+  <div class="modal-body">
+    <h3 id="modal-title" style="margin: 0 0 10px 0; color: var(--gold);">物资核销确认</h3>
+    <p id="modal-desc" style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 20px;">-</p>
+    <div id="modal-actions" style="display: flex; gap: 10px; justify-content: center;">
+      <button style="background: #334155; color:#fff;" onclick="closeModal()">取消</button>
+      <button id="modal-confirm-btn" style="background: var(--green); color:#000; font-weight:bold;">确认使用</button>
+    </div>
+  </div>
+</div>
+
+<!-- ⭐ 核心恢复：战绩高仿游戏详细档案模态窗 (点击卡片查看) -->
+<div id="score-detail-modal" class="modal-mask">
+  <div class="modal-body" style="max-width: 520px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0; color: var(--accent);" id="detail-modal-title">🎮 战绩出勤档案明细</h3>
+      <span style="cursor: pointer; font-size: 20px; color: var(--text-muted);" onclick="closeScoreDetailModal()">×</span>
+    </div>
+    <div id="detail-modal-body"></div>
+  </div>
+</div>
+
+<!-- 月票购买模态窗 -->
+<div id="passport-modal" class="modal-mask">
+  <div class="modal-body" style="text-align: left;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0; color: var(--gold);">🎫 HoloPassport 月票特权</h3>
+      <span style="cursor: pointer; font-size: 20px;" onclick="closePassportModal()">×</span>
+    </div>
+
+    <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); padding: 12px; border-radius: 10px; margin-bottom: 16px;">
+      <div style="font-weight: bold; color: var(--gold); margin-bottom: 4px;">🌟 专属特权权益：</div>
+      <div style="font-size: 13px; color: #f1f5f9; line-height: 1.6;">
+        • ⚡ 律动体力上限提升至 <strong style="color: var(--green);">20 点</strong>（提升 100% 储备）！<br>
+        • 🎁 自动入库一张 5★ 专属限定纪念卡！<br>
+        • ⏳ 生效期内随时叠加购买，天数无限顺延！
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button style="background: var(--gold); color: #000; flex: 1; font-weight: bold;" onclick="buyPassport('balance')">账户余额支付 (¥9.90)</button>
+      <button style="background: #0284c7; color: #fff; flex: 1;" onclick="buyPassport('epay')">在线扫码开通</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let staminaTimerInterval = null;
+  let nextRecoverSeconds = 0;
+  let currentIsUpPool = true;
+  let cachedBackpack = [];
+  let pendingGachaResults = null;
+
+  // 战绩分页全局状态
+  let recordPage = 1;
+  let recordLimit = 10;
+  let recordGameFilter = 'all';
+  let cachedRecordList = [];
+
+  const GACHA_VIDEO_URL = "/api/v1/rhythm-gacha/asset/gacha.mp4";
+
+  // ⭐ 核心优化：右下角极客悬浮加载 HUD 控制
+  function showLoading(text = "正在连线中枢网络...") {
+    document.getElementById('corner-loading-text').innerText = text;
+    document.getElementById('corner-loading').classList.add('active');
+  }
+  function hideLoading() {
+    document.getElementById('corner-loading').classList.remove('active');
+  }
+
+ // 核心：全自动穿透汲取母站登录状态 (URL参数 ➔ 母站LocalStorage ➔ 本地LocalStorage)
+  function getAuthHeader() {
+    try {
+      // 1. 优先读取母页面在 URL 里传进来的 Token
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryToken = urlParams.get('token');
+      if (queryToken) {
+        const fullToken = queryToken.startsWith('Bearer ') ? queryToken : 'Bearer ' + queryToken;
+        localStorage.setItem('XBOARD_ACCESS_TOKEN', JSON.stringify({ value: fullToken, time: Date.now(), expire: Date.now() + 86400000 * 30 }));
+        localStorage.setItem('auth_data', fullToken);
+        return fullToken;
+      }
+
+      // 2. 穿透读取同源母站 (window.parent) 的 LocalStorage！
+      if (window.parent && window.parent !== window) {
+        try {
+          const parentXt = window.parent.localStorage.getItem('XBOARD_ACCESS_TOKEN');
+          if (parentXt) {
+            localStorage.setItem('XBOARD_ACCESS_TOKEN', parentXt);
+            const p = JSON.parse(parentXt);
+            if (p?.value) return p.value.startsWith('Bearer ') ? p.value : 'Bearer ' + p.value;
+          }
+          const parentAt = window.parent.localStorage.getItem('__AURORA_authorization');
+          if (parentAt) {
+            localStorage.setItem('__AURORA_authorization', parentAt);
+            const p = JSON.parse(parentAt);
+            if (p?.value) return p.value.startsWith('Bearer ') ? p.value : 'Bearer ' + p.value;
+          }
+        } catch(e) {}
+      }
+
+      // 3. 读取本地已存的
+      const xt = localStorage.getItem('XBOARD_ACCESS_TOKEN');
+      if (xt) {
+        const p = JSON.parse(xt);
+        if (p?.value) return p.value.startsWith('Bearer ') ? p.value : 'Bearer ' + p.value;
+      }
+      const at = localStorage.getItem('__AURORA_authorization');
+      if (at) {
+        const p = JSON.parse(at);
+        if (p?.value) return p.value.startsWith('Bearer ') ? p.value : 'Bearer ' + p.value;
+      }
+      const raw = localStorage.getItem('auth_data');
+      if (raw) return raw.startsWith('Bearer ') ? raw : 'Bearer ' + raw;
+    } catch(e) {}
+    return '';
+  }
+
+  async function safeFetchWithLoading(url, options = {}, loadingText = "数据交互中...") {
+    showLoading(loadingText);
+    try {
+      options.headers = Object.assign({
+        'Content-Type': 'application/json',
+        'Authorization': getAuthHeader()
+      }, options.headers || {});
+
+      const res = await fetch(url, options);
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(`服务节点返回非预期响应 (${res.status})`);
+      }
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || `请求拒绝 (${res.status})`);
+      return json;
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function switchTab(tab) {
+    const tabs = ['gacha', 'stages', 'backpack', 'records'];
+    tabs.forEach(t => document.getElementById(`view-${t}`).style.display = (t === tab) ? 'block' : 'none');
+    const btns = document.querySelectorAll('.nav-btn');
+    btns.forEach((b, idx) => b.className = (tabs[idx] === tab) ? 'nav-btn active' : 'nav-btn');
+    if (tab === 'backpack') loadBackpack();
+    if (tab === 'records') loadRecordLogs();
+  }
+
+  function choosePool(isUp) {
+    currentIsUpPool = isUp;
+    document.getElementById('tab-up').className = isUp ? 'pool-tab-item active' : 'pool-tab-item';
+    document.getElementById('tab-std').className = !isUp ? 'pool-tab-item active' : 'pool-tab-item';
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    initApp();
+  });
+
+  // 启动自检 (彻底干掉 alert 弹窗与套娃跳转！)
+  async function initApp() {
+    const auth = getAuthHeader();
+    if (!auth) {
+      // 优雅提示，绝不再弹死循环 alert，绝不把面板嵌进 iframe！
+      document.body.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:80vh; text-align:center; padding:20px; font-family:sans-serif;">
+          <div style="font-size:48px; margin-bottom:16px;">🔒</div>
+          <h3 style="color:#f8fafc; margin:0 0 10px 0;">未检测到面板登录状态</h3>
+          <p style="color:#94a3b8; font-size:14px; max-width:300px; line-height:1.5; margin-bottom:20px;">请先在 Xboard 面板登录您的账号后再参与律动跃迁活动。</p>
+          <button style="background:linear-gradient(135deg,#38bdf8,#818cf8); color:#000; border:none; padding:10px 24px; border-radius:10px; font-weight:bold; cursor:pointer;" onclick="window.top.location.href='/#/login'">前往面板登录</button>
+        </div>
+      `;
+      return;
+    }
+
+    await Promise.all([loadUserInfo(), loadPluginInfo(), loadBackpack()]);
+  }
+
+  // 精准已用/总计流量计算
+  async function loadUserInfo() {
+    try {
+      const [infoRes, subRes] = await Promise.all([
+        safeFetchWithLoading('/api/v1/user/info', {}, '同步用户配额...'),
+        safeFetchWithLoading('/api/v1/user/getSubscribe', {}, '校验专线订阅...').catch(() => null)
+      ]);
+      const u = infoRes.data;
+      const sub = subRes ? subRes.data : null;
+
+      document.getElementById('u-email').innerText = u.email;
+
+      if (u.is_admin) {
+        document.getElementById('u-role-badge').innerText = '👑 站长';
+        document.getElementById('u-role-badge').style.color = 'var(--gold)';
+        document.getElementById('btn-admin-gems').style.display = 'inline-block';
+      }
+
+      const totalBytes = Number(sub ? sub.transfer_enable : u.transfer_enable) || 0;
+      const usedBytes = Number(sub ? (sub.u + sub.d) : ((Number(u.u) || 0) + (Number(u.d) || 0))) || 0;
+      const remainingBytes = Math.max(0, totalBytes - usedBytes);
+      
+      const remGB = remainingBytes / (1024 * 1024 * 1024);
+      document.getElementById('u-traffic').innerText = remGB >= 1024 ? (remGB / 1024).toFixed(2) + ' TB' : remGB.toFixed(2) + ' GB';
+
+      const usedStr = usedBytes > (1024 * 1024 * 1024) ? (usedBytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB' : (usedBytes / (1024 * 1024)).toFixed(1) + ' MB';
+      const totalStr = totalBytes > (1024 * 1024 * 1024 * 1024) ? (totalBytes / (1024 * 1024 * 1024 * 1024)).toFixed(2) + ' TB' : (totalBytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+      document.getElementById('u-traffic-detail').innerText = `已用 ${usedStr} / 总计 ${totalStr}`;
+
+      document.getElementById('u-expire').innerText = u.expired_at ? new Date(u.expired_at * 1000).toLocaleDateString() + ' 到期' : '长期有效';
+    } catch(e) {}
+  }
+
+  async function loadPluginInfo() {
+    try {
+      const res = await safeFetchWithLoading('/api/v1/rhythm-gacha/info', {}, '同步律动核心...');
+      const d = res.data;
+
+      document.getElementById('p-gems').innerText = d.gems ?? 0;
+      const pity = d.pity_up ?? 0;
+      document.getElementById('p-pity').innerHTML = `${pity} <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">/ 90</span>`;
+      document.getElementById('pity-progress').style.width = Math.min(100, (pity / 90) * 100) + '%';
+      document.getElementById('p-guaranteed').innerText = d.is_guaranteed ? '大保底激活 (必出当期UP)' : '小保底 (50%可能歪)';
+
+      const s = d.stamina_info || { stamina: 10, max_stamina: 10, seconds_to_next: 0 };
+      const cur = s.stamina ?? 10;
+      const max = s.max_stamina ?? 10;
+      document.getElementById('p-stamina').innerText = `${cur} / ${max}`;
+
+      document.getElementById('bound-maimai-label').innerText = d.bound_maimai ? `已绑: ${d.bound_maimai}` : '未绑定';
+      document.getElementById('bound-osu-label').innerText = d.bound_osu ? `已绑: ${d.bound_osu}` : '未绑定';
+
+      const pass = d.monthly_pass;
+      if (pass && pass.is_active) {
+        document.getElementById('u-passport-badge').innerHTML = `🎫 HoloPassport (${pass.days_left}天)`;
+      }
+
+      nextRecoverSeconds = s.seconds_to_next;
+      startStaminaTicker(cur >= max);
+    } catch(e) {}
+  }
+
+  function startStaminaTicker(isFull) {
+    if (staminaTimerInterval) clearInterval(staminaTimerInterval);
+    const label = document.getElementById('p-stamina-timer');
+    if (isFull) { label.innerText = '体力已完全蓄满'; return; }
+
+    staminaTimerInterval = setInterval(() => {
+      if (nextRecoverSeconds <= 0) {
+        label.innerText = '正在计算恢复...';
+        loadPluginInfo();
+        return;
+      }
+      nextRecoverSeconds--;
+      label.innerText = `下点恢复: ${Math.floor(nextRecoverSeconds / 60)}分${nextRecoverSeconds % 60}秒`;
+    }, 1000);
+  }
+
+  async function handleBindGame(type) {
+    const val = document.getElementById(`bind-${type}`).value.trim();
+    if (!val) return alert("请输入账号标识！");
+    try {
+      const res = await safeFetchWithLoading('/api/v1/rhythm-gacha/bind', {
+        method: 'POST',
+        body: JSON.stringify({ game_type: type, identifier: val })
+      }, '核验账号绑定...');
+      alert(res.message || '绑定成功！');
+      loadPluginInfo();
+    } catch(e) {
+      alert("绑定异常: " + e.message);
+    }
+  }
+
+  async function handleSyncScore() {
+    const type = document.getElementById('sync-game-type').value;
+    try {
+      const res = await safeFetchWithLoading('/api/v1/rhythm-gacha/sync', {
+        method: 'POST',
+        body: JSON.stringify({ game_type: type })
+      }, '发起出勤战绩核算...');
+      alert(res.message);
+      loadPluginInfo();
+      loadRecordLogs();
+    } catch(e) {
+      alert("出勤结算失败: " + e.message);
+    }
+  }
+
+  // 抽卡触发与双轨动画
+  async function triggerGacha(count) {
+    try {
+      const res = await safeFetchWithLoading('/api/v1/rhythm-gacha/gacha/pull', {
+        method: 'POST',
+        body: JSON.stringify({ count: count, is_up_pool: currentIsUpPool })
+      }, '正在构建量子跃迁...');
+
+      pendingGachaResults = res.data?.pull_results || [];
+
+      const videoEl = document.getElementById('gacha-video-el');
+      const videoBox = document.getElementById('gacha-video-box');
+
+      if (GACHA_VIDEO_URL) {
+        videoEl.src = GACHA_VIDEO_URL;
+        videoBox.style.display = 'flex';
+        videoEl.play().catch(() => skipGachaVideo());
+        videoEl.onended = () => skipGachaVideo();
+      } else {
+        skipGachaVideo();
+      }
+    } catch(e) {
+      alert("跃迁失败: " + e.message);
+    }
+  }
+
+  function skipGachaVideo() {
+    const videoBox = document.getElementById('gacha-video-box');
+    const videoEl = document.getElementById('gacha-video-el');
+    videoEl.pause();
+    videoBox.style.display = 'none';
+
+    if (pendingGachaResults && pendingGachaResults.length > 0) {
+      renderGachaRevealGrid(pendingGachaResults);
+    }
+  }
+
+  function renderGachaRevealGrid(items) {
+    const grid = document.getElementById('gacha-reveal-grid');
+    grid.innerHTML = '';
+    items.forEach((it, idx) => {
+      const card = document.createElement('div');
+      card.className = `card-drop star-${it.star}`;
+      card.style.animationDelay = `${idx * 0.05}s`;
+      card.innerHTML = `
+        <div style="font-size: 12px; color: ${it.star === 5 ? 'var(--gold)' : (it.star === 4 ? 'var(--purple)' : 'var(--accent)')};">
+          ${'★'.repeat(it.star)}
+        </div>
+        <div style="margin-top: 6px; font-weight: bold; font-size: 13px;">${it.item_name}</div>
+      `;
+      grid.appendChild(card);
+    });
+    document.getElementById('gacha-result-modal').style.display = 'flex';
+    loadPluginInfo();
+    loadBackpack();
+  }
+
+  function closeGachaResult() {
+    document.getElementById('gacha-result-modal').style.display = 'none';
+  }
+
+  // 背包加载
+  async function loadBackpack() {
+    try {
+      const res = await safeFetchWithLoading('/api/v1/rhythm-gacha/backpack', {}, '清点战术物资...');
+      const list = document.getElementById('backpack-list');
+      list.innerHTML = '';
+      cachedBackpack = res.data?.items || [];
+      document.getElementById('backpack-count').innerText = cachedBackpack.length;
+
+      if (cachedBackpack.length === 0) {
+        list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px;">物资库空空如也，出勤打歌攒宝石去跃迁吧！</div>';
+        return;
+      }
+
+      cachedBackpack.forEach(it => {
+        const item = it.item;
+        const row = document.createElement('div');
+        row.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(8,12,22,0.6); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px;";
+        row.innerHTML = `
+          <div>
+            <span style="font-weight: bold;">${item.name}</span>
+            <span class="user-tag" style="color: ${item.star_level === 5 ? 'var(--gold)' : 'var(--purple)'}; margin-left: 8px;">${item.star_level} ★</span>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">预估入账: +${item.value_min === item.value_max ? item.value_min : item.value_min + '~' + item.value_max} MB 专线额度</div>
+          </div>
+          <button style="background: var(--green); color: #000; font-weight: bold; font-size: 12px;" onclick="promptRedeem(${it.id})">核销入库</button>
+        `;
+        list.appendChild(row);
+      });
+    } catch(e) {}
+  }
+
+  function promptRedeem(id) {
+    const obj = cachedBackpack.find(x => x.id === id);
+    if (!obj) return;
+    const it = obj.item;
+
+    document.getElementById('modal-title').innerText = '物资核销确认';
+    document.getElementById('modal-desc').innerHTML = `
+      确定要使用 <strong style="color: #fff;">${it.name}</strong> 吗？<br>
+      将从区间 <strong style="color: var(--gold);">${it.value_min}~${it.value_max} MB</strong> 随机抽取高速流量直接注入专线。
+    `;
+    document.getElementById('modal-confirm-btn').onclick = () => executeRedeem(id);
+    document.getElementById('redeem-modal').style.display = 'flex';
+  }
+
+  async function executeRedeem(id) {
+    closeModal();
+    try {
+      const res = await safeFetchWithLoading('/api/v1/rhythm-gacha/backpack/redeem', {
+        method: 'POST',
+        body: JSON.stringify({ backpack_id: id })
+      }, '原子配额物理注入...');
+      alert(`🎉 核销成功！开出 +${res.data?.reward_amount} MB 专线高速流量！`);
+      loadUserInfo();
+      loadBackpack();
+    } catch(e) {
+      alert("核销失败: " + e.message);
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('redeem-modal').style.display = 'none';
+  }
+
+  // ================= ⭐ 核心改动：全量出勤纪要分页与筛选 =================
+  function changeRecordFilter() {
+    recordGameFilter = document.getElementById('record-filter-game').value;
+    recordPage = 1;
+    loadRecordLogs();
+  }
+
+  function changeRecordLimit() {
+    recordLimit = parseInt(document.getElementById('record-page-limit').value) || 10;
+    recordPage = 1;
+    loadRecordLogs();
+  }
+
+  function goToPage(delta) {
+    recordPage += delta;
+    if (recordPage < 1) recordPage = 1;
+    loadRecordLogs();
+  }
+
+  async function loadRecordLogs() {
+    try {
+      const url = `/api/v1/rhythm-gacha/records?game_type=${recordGameFilter}&page=${recordPage}&limit=${recordLimit}`;
+      const res = await safeFetchWithLoading(url, {}, '调阅全量出勤档案...');
+      const d = res.data;
+
+      const list = document.getElementById('records-list');
+      list.innerHTML = '';
+      cachedRecordList = d.records || [];
+
+      // 更新分页指示器
+      const total = d.total || 0;
+      const lastPage = d.last_page || 1;
+      document.getElementById('page-indicator').innerText = `第 ${d.current_page} / ${lastPage} 页 (全量共 ${total} 条记录)`;
+      document.getElementById('btn-prev-page').disabled = (d.current_page <= 1);
+      document.getElementById('btn-next-page').disabled = (d.current_page >= lastPage);
+
+      if (cachedRecordList.length === 0) {
+        list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">暂无历史出勤战绩！去打歌出勤吧！</div>';
+        return;
+      }
+
+      cachedRecordList.forEach((r, idx) => {
+        const card = document.createElement('div');
+        card.className = 'score-banner-card';
+        // 绑定点击查看详情弹窗
+        card.onclick = () => showScoreDetailModal(idx);
+
+        if (r.cover_url) {
+          card.style.backgroundImage = `url('${r.cover_url}')`;
+        } else {
+          const radialColor = r.game === 'osu' ? 'rgba(255,102,170,0.12)' : (r.game === 'hololive' ? 'rgba(129,140,248,0.15)' : 'rgba(56,189,248,0.12)');
+          card.style.backgroundImage = `radial-gradient(circle at 85% 50%, ${radialColor}, rgba(8, 12, 22, 0.95))`;
+        }
+
+        const brandColor = r.game === 'osu' ? '#ff66aa' : (r.game === 'hololive' ? '#818cf8' : '#38bdf8');
+        card.style.borderLeft = `5px solid ${brandColor}`;
+
+        card.innerHTML = `
+          <div class="score-banner-overlay">
+            <div>
+              <div style="font-weight: 800; font-size: 15px;">
+                <span class="user-tag" style="background:#000; border-color:${brandColor}; color:#fff; font-size:10px; padding:2px 6px;">${r.game.toUpperCase()}</span>
+                ${r.title} <span style="font-size: 12px; color: var(--text-muted);">${r.sub_title}</span>
+              </div>
+              <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;">
+                ${r.metric} | <strong>${r.score_str}</strong> | ${r.detail} | 时间: ${r.time.slice(0, 16)}
+              </div>
+              <div style="font-size: 11px; color: var(--accent); margin-top: 3px;">👉 点击查看高精击打明细与谱面档案</div>
+            </div>
+            <div style="text-align: right; white-space: nowrap;">
+              <span style="font-size: 24px; font-weight: 900; color: var(--gold); margin-right: 8px; font-style: italic;">${r.rank}</span>
+              <span class="user-tag" style="color: var(--gold); border-color: var(--gold);">+${r.gems} 💎</span>
+            </div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    } catch(e) {}
+  }
+
+  // ================= ⭐ 核心恢复：三平台战绩高精详情弹窗展示 =================
+  function showScoreDetailModal(index) {
+    const r = cachedRecordList[index];
+    if (!r) return;
+
+    const modalTitle = document.getElementById('detail-modal-title');
+    const modalBody = document.getElementById('detail-modal-body');
+    modalTitle.innerText = `🎮 [${r.game.toUpperCase()}] 战绩档案明细`;
+
+    let detailHtml = `
+      ${r.cover_url ? `<img src="${r.cover_url}" style="width:100%; max-height:140px; object-fit:cover; border-radius:10px; margin-bottom:12px; border:1px solid var(--border);">` : ''}
+      <div style="font-size: 18px; font-weight: bold; color: #fff;">${r.title}</div>
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">曲师/版本: ${r.sub_title}</div>
+
+      <div style="background: rgba(0,0,0,0.5); border-radius: 12px; padding: 14px; border: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; margin-bottom: 14px;">
+        <div style="font-size: 48px; font-weight: 900; color: var(--gold); font-style: italic;">${r.rank}</div>
+        <div style="text-align: left; line-height: 1.6; font-size: 13px;">
+          <div>指标: <strong style="color: var(--accent);">${r.metric}</strong></div>
+          <div>得分: <strong style="color: #fff;">${r.score_str}</strong></div>
+          <div>流水时间: <span style="color: var(--text-muted);">${r.time}</span></div>
+          <div>出勤获赠: <strong style="color: var(--gold);">+${r.gems} 💎 宝石</strong></div>
+        </div>
+      </div>
+    `;
+
+    // 平台判定详情专属四宫格/八宫格
+    if (r.game === 'osu' && r.count_300 !== undefined) {
+      detailHtml += `
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-size: 11px; text-align: center; background: #080d1a; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+          <div><span style="color: #60a5fa;">300</span><br><strong style="font-size: 14px;">${r.count_300}</strong></div>
+          <div><span style="color: #34d399;">100</span><br><strong style="font-size: 14px;">${r.count_100}</strong></div>
+          <div><span style="color: #fbbf24;">50</span><br><strong style="font-size: 14px;">${r.count_50}</strong></div>
+          <div><span style="color: #f43f5e;">MISS</span><br><strong style="font-size: 14px;">${r.count_miss}</strong></div>
+        </div>
+      `;
+    } else if (r.game === 'hololive' && r.perfect !== undefined) {
+      detailHtml += `
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; font-size: 11px; text-align: center; background: #080d1a; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;">
+          <div><span style="color: #c084fc;">PERFECT</span><br><strong style="font-size: 13px;">${r.perfect}</strong></div>
+          <div><span style="color: #60a5fa;">GREAT</span><br><strong style="font-size: 13px;">${r.great}</strong></div>
+          <div><span style="color: #34d399;">GOOD</span><br><strong style="font-size: 13px;">${r.good}</strong></div>
+          <div><span style="color: #fbbf24;">BAD</span><br><strong style="font-size: 13px;">${r.bad}</strong></div>
+          <div><span style="color: #f43f5e;">MISS</span><br><strong style="font-size: 13px;">${r.miss}</strong></div>
+        </div>
+        <div style="display: flex; justify-content: space-around; font-size: 12px; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 6px;">
+          <span>FAST: <strong>${r.fast}</strong></span>
+          <span>SLOW: <strong>${r.slow}</strong></span>
+          <span>历史最高: <strong>${Number(r.hi_score).toLocaleString()}</strong></span>
+        </div>
+      `;
+    } else if (r.game === 'maimai') {
+      detailHtml += `
+        <div style="display: flex; justify-content: space-around; font-size: 12px; background: #080d1a; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+          <span>定数: <strong>${r.ds}</strong></span>
+          <span>奖牌: <strong>${r.fc || '无'} ${r.fs || ''}</strong></span>
+          <span>DX得分: <strong>${Number(r.dx_score).toLocaleString()}</strong></span>
+        </div>
+      `;
+    }
+
+    // 动作按钮
+    detailHtml += `
+      <div style="margin-top: 16px; display: flex; gap: 10px; justify-content: flex-end;">
+        ${r.beatmap_url ? `<button class="btn-warp" style="padding: 8px 16px; font-size: 12px; background: #ff66aa; box-shadow: none;" onclick="window.open('${r.beatmap_url}', '_blank')">🌐 前往官网谱面</button>` : ''}
+        <button style="background: #334155; padding: 8px 18px;" onclick="closeScoreDetailModal()">关闭</button>
+      </div>
+    `;
+
+    modalBody.innerHTML = detailHtml;
+    document.getElementById('score-detail-modal').style.display = 'flex';
+  }
+
+  function closeScoreDetailModal() {
+    document.getElementById('score-detail-modal').style.display = 'none';
+  }
+
+  // 截图上传
+  async function uploadHoloScreenshot() {
+    const file = document.getElementById('holo-file').files[0];
+    if (!file) return alert("请选择 PNG 原图！");
+    const formData = new FormData();
+    formData.append('screenshot', file);
+
+    showLoading('正在进行多模态安全审计...');
+    try {
+      const res = await fetch('/api/v1/rhythm-gacha/hololive/audit', {
+        method: 'POST',
+        headers: { 'Authorization': getAuthHeader() },
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      alert(`🎉 审核通过！达成 ${data.data?.rank} 级，入账 +${data.data?.gems_earned} 宝石！`);
+      loadPluginInfo();
+      loadRecordLogs();
+    } catch(e) {
+      alert("核验驳回: " + e.message);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function openPassportModal() { document.getElementById('passport-modal').style.display = 'flex'; }
+  function closePassportModal() { document.getElementById('passport-modal').style.display = 'none'; }
+
+  async function buyPassport(type) {
+    try {
+      const res = await safeFetchWithLoading('/api/v1/rhythm-gacha/pass/buy', {
+        method: 'POST',
+        body: JSON.stringify({ pay_type: type })
+      }, '开通月票特权...');
+      if (type === 'balance') {
+        alert(res.message || '开通成功！');
+        closePassportModal();
+        loadUserInfo();
+        loadPluginInfo();
+      } else if (res.data?.pay_url) {
+        window.location.href = res.data.pay_url;
+      }
+    } catch(e) {
+      alert("购买失败: " + e.message);
+    }
+  }
+
+  async function handleGetTestGems() {
+    try {
+      const res = await safeFetchWithLoading('/api/v1/rhythm-gacha/test/gems', { method: 'POST' }, '注入测试宝石...');
+      alert(res.message);
+      loadPluginInfo();
+    } catch(e) {
+      alert(e.message);
+    }
+  }
+
+  // 核心修复：以独立窗口唤起 OAuth，彻底绕过 iframe 的 X-Frame-Options 拦截
+  function startOsuOAuth() {
+    safeFetchWithLoading('/api/v1/rhythm-gacha/oauth/osu/redirect', {}, '获取官方授权地址...').then(res => {
+      if (res.data?.url) {
+        // 计算居中小窗口尺寸
+        const w = 620;
+        const h = 750;
+        const left = Math.max(0, (window.screen.width - w) / 2);
+        const top = Math.max(0, (window.screen.height - h) / 2);
+
+        // 打开独立小窗
+        const oauthWindow = window.open(
+          res.data.url, 
+          'osu_oauth_popup', 
+          `width=${w},height=${h},top=${top},left=${left},status=no,resizable=yes,scrollbars=yes`
+        );
+
+        // 若浏览器拦截了 Popup，回退到普通新标签页打开
+        if (!oauthWindow || oauthWindow.closed || typeof oauthWindow.closed === 'undefined') {
+          window.open(res.data.url, '_blank');
+        }
+      }
+    });
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('XBOARD_ACCESS_TOKEN');
+    localStorage.removeItem('__AURORA_authorization');
+    localStorage.removeItem('auth_data');
+    window.location.reload();
+  }
+
+  // 监听来自授权小弹窗的成功通信
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'OSU_AUTH_SUCCESS') {
+      // 收到绑定成功通知，立即原地刷新资产和已绑账号显示！
+      loadPluginInfo();
+    }
+  });
+</script>
+
+</body>
+</html>

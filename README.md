@@ -56,7 +56,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                       用户交互接入层                         │
 ├──────────────────────────────┬──────────────────────────────┤
-│  网页端: 客户端级活动视窗     │  移动端: 独立 Telegram 机器人 │
+│  网页端: 客户端级活动视窗      │  移动端: 独立 Telegram 机器人  │
 │  (内置 /app 页面 / 动态 WebP) │  (单卡片状态机 / 内存流图片)   │
 └──────────────┬───────────────┴──────────────┬───────────────┘
                │                              │
@@ -65,20 +65,20 @@
 │                    RhythmGacha 核心服务层                    │
 ├─────────────────────────────────────────────────────────────┤
 │  • StaminaService: 45min 滑动窗口体力引擎 (Lazy Evaluation)   │
-│  • GachaService: 90抽大小保底 / 10抽4★保底 / 多UP独立卡池   │
-│  • BackpackService: 悲观锁事务核销 / MB-Byte 物理换算引擎     │
+│  • GachaService: 90抽大小保底 / 10抽4★保底 / 多UP独立卡池     │
+│  • BackpackService: 悲观锁事务核销 / MB-Byte 物理换算引擎      │
 │  • GameDriverFactory: osu! / 水鱼 / hololive 统一评级归一化   │
-│  • HololiveVisionService: 16进制底层取证 / 多模态紧凑流审计   │
+│  • HololiveVisionService: 16进制底层取证 / 多模态紧凑流审计    │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                       底层持久化与对接                       │
 ├──────────────────────────────┬──────────────────────────────┤
-│  插件自建表体系              │  Xboard 核心系统             │
-│  • ry_users / ry_items       │  • v2_user (原子累加流量)    │
+│  插件自建表体系               │  Xboard 核心系统              │
+│  • ry_users / ry_items       │  • v2_user (原子累加流量)     │
 │  • ry_backpack / pools       │  • payment.notify.verified   │
-│  • ry_osu / mai / holo_scores│    (订单钩子自动赠送月票)    │
+│  • ry_osu / mai / holo_scores│    (订单钩子自动赠送月票)      │
 └──────────────────────────────┴──────────────────────────────┘
 ```
 
@@ -97,17 +97,212 @@
 3. 登录 Xboard 管理后台 ➔ **插件管理** ➔ 点击 **上传插件**，选择 `.zip` 包完成上传并点击 **启用**。
 
 ### 3. 初始化数据表
-登录宝塔终端或服务器 SSH，进入 Xboard 根目录执行迁移建表：
+登录宝塔终端或服务器 SSH，进入 数据库管理工具（如 phpMyAdmin / Navicat）执行迁移建表：
 
-```bash
-# Docker 部署执行:
-docker compose exec -it xboard php artisan rhythm-gacha:install
+```MySQL
+-- =========================================================
+-- Default Charset: utf8mb4
+-- =========================================================
 
-# 独立环境部署执行:
-php artisan rhythm-gacha:install
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ---------------------------------------------------------
+-- Table structure for `ry_backpack`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `ry_backpack`;
+CREATE TABLE `ry_backpack` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `item_id` int NOT NULL,
+  `amount` int NOT NULL DEFAULT '1',
+  `is_used` tinyint(1) NOT NULL DEFAULT '0',
+  `used_at` timestamp NULL DEFAULT NULL,
+  `source` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_ry_backpack_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `ry_users`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `ry_users`;
+CREATE TABLE `ry_users` (
+  `user_id` int NOT NULL,
+  `is_admin` tinyint(1) NOT NULL DEFAULT '0',
+  `gems` int NOT NULL DEFAULT '0',
+  `stamina` int NOT NULL DEFAULT '10',
+  `last_stamina_update` timestamp NULL DEFAULT NULL,
+  `monthly_pass_expire` timestamp NULL DEFAULT NULL,
+  `pity_standard` int NOT NULL DEFAULT '0',
+  `pity_4_standard` int DEFAULT '0' COMMENT '常驻池4星垫抽数(逢10必出)',
+  `pity_up` int NOT NULL DEFAULT '0',
+  `pity_4_up` int DEFAULT '0' COMMENT 'UP池4星垫抽数(逢10必出)',
+  `is_next_up_guaranteed` tinyint(1) NOT NULL DEFAULT '0',
+  `osu_uid` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `maimai_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `last_osu_score_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `last_maimai_score_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `device_resolution_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '首次绑定的设备长宽乘积哈希',
+  PRIMARY KEY (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `ry_osu_scores`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `ry_osu_scores`;
+CREATE TABLE `ry_osu_scores` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL COMMENT '关联Xboard用户ID',
+  `score_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '官方唯一战绩ID',
+  `beatmap_id` int DEFAULT NULL COMMENT '谱面ID',
+  `song_title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '曲目标题',
+  `cover_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `beatmap_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `artist` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '曲师',
+  `difficulty_rating` decimal(4,2) DEFAULT NULL COMMENT '难度星级',
+  `score` bigint DEFAULT '0' COMMENT '得分',
+  `pp` decimal(6,2) DEFAULT '0.00',
+  `accuracy` decimal(5,4) DEFAULT '0.0000' COMMENT '准确率 (0.0000~1.0000)',
+  `rank` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '官方评级 (XH, S, A等)',
+  `max_combo` int DEFAULT '0' COMMENT '最大连击数',
+  `count_300` int DEFAULT '0',
+  `count_100` int DEFAULT '0',
+  `count_50` int DEFAULT '0',
+  `count_miss` int DEFAULT '0',
+  `level_awarded` int NOT NULL COMMENT '折算标准等级 (1-5)',
+  `gems_awarded` int NOT NULL COMMENT '发放宝石数',
+  `played_at` timestamp NOT NULL COMMENT '打歌完成时间戳',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_osu_score` (`score_id`),
+  KEY `idx_user_played` (`user_id`, `played_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `ry_maimai_scores`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `ry_maimai_scores`;
+CREATE TABLE `ry_maimai_scores` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL COMMENT '关联Xboard用户ID',
+  `score_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'MD5(song_id+level_index+achievements+dxScore)防伪指纹',
+  `song_id` int NOT NULL COMMENT '水鱼曲目ID',
+  `song_title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '曲名',
+  `song_type` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT 'DX' COMMENT 'DX 或 SD',
+  `level_label` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Master/Expert/Advanced/Basic',
+  `level_index` int DEFAULT '3' COMMENT '0到4代表Basic到Re:Master',
+  `ds` decimal(4,1) DEFAULT '0.0' COMMENT '谱面定数',
+  `achievements` decimal(7,4) NOT NULL COMMENT '达成率 (如 100.5000)',
+  `dx_score` int DEFAULT '0' COMMENT 'DX得分',
+  `rate` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '官方评级 (sssp, sss, ssp, ss, s, aaa等)',
+  `fc` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT 'FC状态 (fc, fcp, ap, app)',
+  `fs` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT 'FS状态 (sync, fs, fsd等)',
+  `level_awarded` int NOT NULL COMMENT '折算标准等级 (1-5)',
+  `gems_awarded` int NOT NULL COMMENT '发放宝石数',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_mai_user_score` (`user_id`, `score_id`),
+  KEY `idx_user_created` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `ry_items`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `ry_items`;
+CREATE TABLE `ry_items` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `star_level` int NOT NULL,
+  `type` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value_min` int NOT NULL,
+  `value_max` int NOT NULL,
+  `is_in_standard_pool` tinyint(1) NOT NULL DEFAULT '1',
+  `is_in_up_pool` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `ry_hololive_scores`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `ry_hololive_scores`;
+CREATE TABLE `ry_hololive_scores` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `image_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '图片文件SHA256(绝对防重复提交)',
+  `score_metrics_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '击打与分数维度哈希',
+  `payload_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '全量元数据维度哈希',
+  `song_title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '曲目名称',
+  `artist` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '曲师',
+  `difficulty` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'EASY/NORMAL/HARD/EXPERT/MASTER',
+  `level_num` int DEFAULT '0' COMMENT '数字等级 (如18)',
+  `leader_character` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '队长角色',
+  `score` bigint DEFAULT '0' COMMENT '最终得分',
+  `hi_score` bigint DEFAULT '0' COMMENT '历史最高分',
+  `rank` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '评级大写字母',
+  `max_combo` int DEFAULT '0',
+  `perfect_count` int DEFAULT '0',
+  `great_count` int DEFAULT '0',
+  `good_count` int DEFAULT '0',
+  `bad_count` int DEFAULT '0',
+  `miss_count` int DEFAULT '0',
+  `fast_count` int DEFAULT '0',
+  `slow_count` int DEFAULT '0',
+  `is_new_record` tinyint(1) DEFAULT '0',
+  `level_awarded` int NOT NULL COMMENT '折算标准等级 (1-5)',
+  `gems_awarded` int NOT NULL COMMENT '发放宝石数',
+  `device_res_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '设备分辨率乘积哈希',
+  `photo_time` timestamp NOT NULL COMMENT '图片底层的拍摄时间戳',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_image_hash` (`image_hash`),
+  KEY `idx_user_holo` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `ry_hololive_charts`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `ry_hololive_charts`;
+CREATE TABLE `ry_hololive_charts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `chart_key` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '曲名_难度_等级的唯一标识',
+  `song_title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `difficulty` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `level_num` int DEFAULT '0',
+  `total_notes` int NOT NULL COMMENT '该谱面官方总音符数',
+  `verified_count` int DEFAULT '1' COMMENT '已验证该物量一致的次数',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_chart_key` (`chart_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------
+-- Table structure for `ry_gacha_pools`
+-- ---------------------------------------------------------
+DROP TABLE IF EXISTS `ry_gacha_pools`;
+CREATE TABLE `ry_gacha_pools` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '卡池展示名称',
+  `code` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '卡池唯一标识符(如 up_void_core)',
+  `type` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'up' COMMENT '类型: up 或 standard',
+  `up_5_star_ids` json DEFAULT NULL COMMENT '配置的5星UP道具ID数组，如 [4]',
+  `up_4_star_ids` json DEFAULT NULL COMMENT '配置的4星UP道具ID数组，如 [2]',
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '卡池简短描述',
+  `is_active` tinyint(1) DEFAULT '1' COMMENT '是否开启该池',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pool_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;
 ```
 
-若使用外部数据库管理工具（如 phpMyAdmin / Navicat），亦可直接执行 [database.sql](database/schema.sql) 文件中的建表语句。
+
 
 ---
 
@@ -339,27 +534,3 @@ interface GameDriverInterface
 1. 本项目基于 [MIT License](LICENSE) 协议开源，允许自由商用、二次修改与分发；
 2. 本项目所调用的 osu!、舞萌 DX（水鱼查分器）等接口均为公开合法 API，不涉及对任何商业客户端的注入、修改或逆向篡改；
 3. 本项目仅供技术交流与学习，服主应对所发放的虚拟积分及网络服务合法合规性自行负责。
-```
-
----
-
-### 💡 仓库提交文件结构参考
-
-建议你在 GitHub 提交时保持如下纯净目录：
-
-```text
-.
-├── Commands/                      # Artisan 命令库
-├── Controllers/                   # RESTful API 控制器
-├── Events/                        # 领域事件定义
-├── Listeners/                     # 事件监听与发货总线
-├── Models/                        # Eloquent ORM 数据模型
-├── Services/                      # 核心业务逻辑 (体力/抽卡/防伪/驱动)
-├── database/                      # 基础数据库 SQL 备份
-├── resources/                     # 前端活动视图与 loading.webp 资产
-├── routes/                        # 插件路由定义
-├── config.json                    # 插件声明与配置项
-├── Plugin.php                     # 插件启动主类
-├── README.md                      # 完整项目文档 (上面的内容)
-└── LICENSE                        # MIT License
-```

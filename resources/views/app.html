@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>REIA NEXT · 律动跃迁特别企划</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     :root {
       --bg: #06090f;
@@ -401,6 +402,39 @@
       opacity: 0.4;
       cursor: not-allowed;
     }
+    /* 核心修复：三大出勤卡片统一等高、边框完全显化 */
+    .stage-card {
+      background: rgba(8, 12, 22, 0.75);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.2s;
+    }
+    .stage-card:hover {
+      border-color: var(--border-glow);
+    }
+
+    /* 满血 Markdown 排版样式 (强制浅色，彻底解决隐形看不见) */
+    .markdown-body {
+      font-size: 13px !important;
+      line-height: 1.75 !important;
+      color: #e2e8f0 !important; /* 强制浅灰白，绝不隐形 */
+      text-align: left !important;
+    }
+    .markdown-body * { color: inherit; }
+    .markdown-body h1 { font-size: 18px !important; color: #fbbf24 !important; border-bottom: 1px solid rgba(56,189,248,0.3) !important; padding-bottom: 6px !important; margin: 0 0 12px 0 !important; }
+    .markdown-body h2, .markdown-body h3 { font-size: 15px !important; color: #38bdf8 !important; margin: 16px 0 8px 0 !important; }
+    .markdown-body p { margin: 8px 0 !important; color: #cbd5e1 !important; }
+    .markdown-body strong { color: #ffffff !important; font-weight: bold !important; }
+    .markdown-body table { width: 100% !important; border-collapse: collapse !important; margin: 12px 0 !important; font-size: 12px !important; }
+    .markdown-body th, .markdown-body td { border: 1px solid rgba(56,189,248,0.2) !important; padding: 6px 10px !important; text-align: center !important; }
+    .markdown-body th { background: rgba(56, 189, 248, 0.15) !important; color: #38bdf8 !important; }
+    .markdown-body code { background: rgba(0,0,0,0.6) !important; color: #f43f5e !important; padding: 2px 6px !important; border-radius: 4px !important; font-size: 12px !important; font-family: monospace !important; }
+    .markdown-body ul { padding-left: 20px !important; margin: 8px 0 !important; color: #cbd5e1 !important; }
+    .markdown-body hr { border: none !important; border-top: 1px solid rgba(56,189,248,0.2) !important; margin: 16px 0 !important; }
   </style>
 </head>
 <body>
@@ -417,6 +451,7 @@
       </div>
       <div style="display: flex; gap: 8px;">
         <button id="btn-admin-gems" style="display: none; background: var(--gold); color: #000; font-size: 12px; padding: 5px 12px; border-radius: 20px;" onclick="handleGetTestGems()">💎 注入钻(+2500)</button>
+        <button style="background: rgba(56,189,248,0.2); border: 1px solid var(--accent); color: #fff; font-size: 12px; padding: 5px 12px; border-radius: 20px;" onclick="openTutorialModal()">📖 玩法指引&教程</button>
         <button style="background: #1e293b; font-size: 12px; padding: 5px 12px; border-radius: 20px;" onclick="handleLogout()">登出</button>
       </div>
     </div>
@@ -496,18 +531,18 @@
       <h3 style="margin-top: 0;">🎛️ 音游出勤舞台</h3>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
         
-        <!-- 舞萌 DX -->
-        <div class="asset-slot" style="display: flex; flex-direction: column; justify-content: space-between;">
+         <!-- 1. 舞萌 DX (边框加固修复) -->
+        <div class="stage-card">
           <div>
             <div style="display: flex; justify-content: space-between; font-weight: bold; color: var(--accent); margin-bottom: 8px;">
-              <span>舞萌 DX (水鱼查分器)</span>
-              <span style="font-size: 11px; cursor: pointer; color: var(--text-muted);" onclick="alert('若水鱼开启了隐私，请在水鱼个人资料中获取 Import-Token 填入绑定！')">❓ 隐私提示</span>
+              <span>舞萌 DX (落雪咖啡屋)</span>
+              <span style="font-size: 11px; cursor: pointer; color: var(--accent);" onclick="startLxnsOAuth()">🔗 官网授权</span>
             </div>
-            <input type="text" id="bind-maimai" placeholder="水鱼用户名 / QQ / Token" style="width: 100%; margin-bottom: 10px;">
+            <input type="text" id="bind-maimai" placeholder="个人 API 密钥 / 15位好友码" style="width: 100%; margin-bottom: 10px;">
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 12px; color: var(--text-muted);" id="bound-maimai-label">未绑定</span>
-            <button onclick="handleBindGame('maimai')">验证绑定</button>
+            <span style="font-size: 12px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;" id="bound-maimai-label">未绑定</span>
+            <button class="btn-action" style="padding: 6px 14px;" onclick="handleBindGame('maimai')">验证绑定</button>
           </div>
         </div>
 
@@ -876,6 +911,13 @@
 
       nextRecoverSeconds = s.seconds_to_next;
       startStaminaTicker(cur >= max);
+
+      // ================= ⭐ 核心加入：在 d 存在的作用域内安全提取并自动弹窗 =================
+      cachedTutorialMd = d.tutorial_markdown || '';
+      if (!localStorage.getItem('reia_tutorial_read_v1') && cachedTutorialMd) {
+        openTutorialModal();
+      }
+
     } catch(e) {}
   }
 
@@ -1303,7 +1345,97 @@
       loadPluginInfo();
     }
   });
-</script>
+  
+  // 唤起落雪官网 OAuth 独立弹窗
+  function startLxnsOAuth() {
+    safeFetchWithLoading('/api/v1/rhythm-gacha/oauth/lxns/redirect', {}, '获取落雪授权地址...').then(res => {
+      if (res.data?.url) {
+        window.open(res.data.url, 'lxns_oauth_popup', 'width=600,height=750,status=no,resizable=yes');
+      }
+    }).catch(err => {
+      alert(err.message || '若未配置 OAuth，请直接在输入框粘贴您的落雪个人 API 密钥或好友码绑定！');
+    });
+  }
 
+  // 监听落雪授权回调成功
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'MAIMAI_AUTH_SUCCESS') {
+      loadPluginInfo();
+    }
+  });
+
+  let cachedTutorialMd = '';
+
+  // ⭐ 核心优化：打开教程弹窗 (如果未缓存则自主发起读取，100% 杜绝空白)
+  async function openTutorialModal() {
+    document.getElementById('tutorial-modal').style.display = 'flex';
+
+    // 如果还没有读取到，主动向后端拉取教程内容！
+    if (!cachedTutorialMd) {
+      try {
+        const res = await safeFetchWithLoading('/api/v1/rhythm-gacha/info', {}, '正在获取活动指南...');
+        cachedTutorialMd = res.data?.tutorial_markdown || '';
+      } catch(e) {}
+    }
+
+    // 渲染 Markdown 内容
+    await renderMarkdownContent(cachedTutorialMd);
+  }
+
+  function closeTutorialModal() {
+    document.getElementById('tutorial-modal').style.display = 'none';
+    localStorage.setItem('reia_tutorial_read_v1', 'true');
+  }
+
+  async function renderMarkdownContent(mdText) {
+    const el = document.getElementById('tutorial-content');
+    if (!el) return;
+
+    if (!mdText) {
+      el.innerHTML = '<p style="color:#94a3b8; text-align:center;">暂无活动指引内容</p>';
+      return;
+    }
+
+    try {
+      if (window.marked) {
+        // marked.parse 在 v12+ 可能是 Promise，必须使用 await 拿到纯 HTML 文本
+        const html = await marked.parse(mdText);
+        el.innerHTML = html;
+        return;
+      }
+    } catch(e) {
+      console.warn("Marked 解析异常，自动走正则兜底:", e);
+    }
+
+    // 纯纯无依赖原生极速解析兜底 (绝对不会为空！)
+    el.innerHTML = mdText
+      .replace(/^# (.*$)/gim, '<h1 style="color:#fbbf24;">$1</h1>')
+      .replace(/^### (.*$)/gim, '<h3 style="color:#38bdf8;">$1</h3>')
+      .replace(/\*\*(.*?)\*\*/gim, '<strong style="color:#fff;">$1</strong>')
+      .replace(/`([^`]+)`/gim, '<code style="color:#f43f5e; background:rgba(0,0,0,0.5); padding:2px 4px; border-radius:4px;">$1</code>')
+      .replace(/\r\n/g, '<br>')
+      .replace(/\n/g, '<br>');
+  }
+
+  
+</script>
+<!-- 新手指引 Markdown 弹窗 (规范完整版) -->
+<div id="tutorial-modal" class="modal-mask">
+  <div class="modal-body" style="max-width: 620px; max-height: 85vh; display: flex; flex-direction: column;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+      <h3 style="margin: 0; color: var(--accent);">📖 律动跃迁 · 新手指南与活动规则</h3>
+      <span style="cursor: pointer; font-size: 22px; color: var(--text-muted);" onclick="closeTutorialModal()">×</span>
+    </div>
+    
+    <!-- 内容滚动区域 -->
+    <div id="tutorial-content" class="markdown-body" style="flex: 1; overflow-y: auto; padding-right: 6px; min-height: 200px;">
+      正在载入活动指南...
+    </div>
+
+    <div style="margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--border); text-align: right;">
+      <button class="btn-warp" style="padding: 8px 24px; font-size: 13px;" onclick="closeTutorialModal()">我已了解</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

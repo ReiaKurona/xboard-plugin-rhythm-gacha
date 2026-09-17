@@ -299,6 +299,9 @@ CREATE TABLE `ry_gacha_pools` (
   UNIQUE KEY `uk_pool_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE ry_maimai_scores 
+ADD COLUMN IF NOT EXISTS cover_url VARCHAR(500) NULL AFTER song_title;
+
 SET FOREIGN_KEY_CHECKS = 1;
 ```
 

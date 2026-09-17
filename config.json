@@ -1,7 +1,7 @@
 {
     "name": "Rhythm Gacha",
     "code": "rhythm_gacha",
-    "version": "1.0.50",
+    "version": "1.0.53",
     "description": "二次元赛博音游抽卡、体力与背包生态系统",
     "author": "Reia",
     "require": {
@@ -13,6 +13,12 @@
             "default": 300,
             "label": "自动巡检同步频率 (秒)",
             "description": "后台全自动巡检战绩的间隔时间(秒)。例如：5分钟填300，10分钟填600，默认300秒"
+        },
+        "callback_base_url": {
+            "type": "string",
+            "default": "",
+            "label": "支付与业务回调 Base URL",
+            "description": "易支付异步通知与同步返回的基础域名(带https://)，如留空则自动取当前站点网址。例如: https://example.com"
         },
         "gacha_web_url": {
             "type": "string",
@@ -31,6 +37,24 @@
             "default": "",
             "label": "osu! OAuth Client Secret",
             "description": "在 osu! 官网申请的 Application Client Secret 密钥"
+        },
+        "lxns_developer_token": {
+            "type": "string",
+            "default": "",
+            "label": "落雪咖啡屋 Developer Token (可选)",
+            "description": "落雪开发者平台申请的开发者 API 密钥。若配置，玩家只需填写好友码或QQ即可查分"
+        },
+        "lxns_oauth_client_id": {
+            "type": "string",
+            "default": "",
+            "label": "落雪 OAuth Client ID (可选)",
+            "description": "落雪开放平台申请的 OAuth Client ID"
+        },
+        "lxns_oauth_client_secret": {
+            "type": "string",
+            "default": "",
+            "label": "落雪 OAuth Client Secret (可选)",
+            "description": "落雪开放平台申请的 OAuth Client Secret"
         },
         "ai_vision_base_url": {
             "type": "string",
@@ -73,6 +97,12 @@
             "default": "",
             "label": "Telegram Webhook Base URL",
             "description": "公网可访问的基础域名(必须HTTPS)，例如: https://example.com"
+        },
+        "tutorial_markdown": {
+            "type": "string",
+            "default": "# 🎮 REIA NEXT 律动跃迁 · 新手指南\n\n欢迎来到 **律动跃迁** 特别企划！在这里，你可以将音游游玩战绩直接转化为**高速专线流量**与战略物资！\n\n---\n\n### ⚡ 核心机制：体力与出勤\n- **自然恢复**：每 **45 分钟** 恢复 1 点体力。\n- **体力上限**：普通会员上限为 **10 点**，持有 **HoloPassport 月票** 上限扩充至 **20 点**！\n- **出勤扣费**：每次核销出勤成绩消耗 **1 点** 体力（0体力时依然记录但无奖励，杜绝囤积）。\n\n### 🥁 战绩结算与宝石获取\n结算评级将直接折算为宝石（代币）：\n| 评级阶级 | 对应标准 | 奖励宝石 |\n| :--- | :--- | :---: |\n| **Level 5** | SS / SSS / SSS+ / AP | **100 💎** |\n| **Level 4** | S / S+ | **75 💎** |\n| **Level 3** | A / AA / AAA | **50 💎** |\n| **Level 2** | B / BB / BBB | **25 💎** |\n| **Level 1** | C / D | **10 💎** |\n\n### 🎰 祈愿跃迁 (抽卡保底)\n- **单抽**：消耗 **250 💎**；**十连**：消耗 **2500 💎**。\n- **4★ 稀有保底**：每 **10 抽** 必定出 4★ 或以上道具。\n- **5★ 大小保底**：每 **90 抽** 必出 5★；若在 UP 池中首次未抽中当期 UP，**下次 90 抽 100% 必出 UP 核心**！\n\n### 🎒 物资核销与流量注入\n抽取到的流量盲盒将暂存于 **战术背包** 中。在背包中点击 **核销入库**，即可将高速专线流量物理注入您的 Xboard 账号！",
+            "label": "新手使用教程 (Markdown 原文)",
+            "description": "支持完整 Markdown 语法渲染，用于向玩家介绍如何出勤、查分、抽卡和领流量"
         },
         "bundled_pass_plan_ids": {
             "type": "string",

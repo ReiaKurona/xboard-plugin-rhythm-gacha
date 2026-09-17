@@ -931,12 +931,19 @@ class TelegramBotService
 
         $outTradeNo = 'PASS_' . $user->id . '_' . time();
         $cfg = $payment->config;
+        // 核心改造：读取后台自定义回调 Base URL
+        $customBaseUrl = trim((string)($plugin ? $plugin->getConfig('callback_base_url', '') : ''));
+        $baseUrl = !empty($customBaseUrl) ? rtrim($customBaseUrl, '/') : rtrim(url('/'), '/');
+
+        $notifyUrl = "{$baseUrl}/api/v1/rhythm-gacha/pass/epay/notify";
+        $returnUrl = "{$baseUrl}/api/v1/rhythm-gacha/app";
+
         $params = [
             'pid'          => $cfg['epay_pid'] ?? $cfg['pid'],
             'type'         => $channel,
             'out_trade_no' => $outTradeNo,
-            'notify_url'   => url('/api/v1/rhythm-gacha/pass/epay/notify'),
-            'return_url'   => url('/api/v1/rhythm-gacha/app'),
+            'notify_url'   => $notifyUrl,
+            'return_url'   => $returnUrl,
             'name'         => 'HoloPassport月票(30天)',
             'money'        => sprintf('%.2f', $price),
         ];

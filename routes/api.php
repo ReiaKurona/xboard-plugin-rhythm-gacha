@@ -36,7 +36,10 @@ Route::group([
 ], function () {
     // osu! 官网授权重定向跳转回调
     Route::get('/oauth/osu/callback', [RhythmController::class, 'handleOsuCallback']);
-    
+    // 用户前台获取落雪 OAuth 授权链接
+    Route::get('/oauth/lxns/redirect', [RhythmController::class, 'getLxnsAuthorizeUrl']);
+    // 公开落雪 OAuth 回调接收端点
+    Route::get('/oauth/lxns/callback', [RhythmController::class, 'handleLxnsCallback']);
     // 核心修正：使用标准的 Route::any (接收易支付 GET / POST 异步通知)
     Route::any('/pass/epay/notify', [RhythmController::class, 'handleEpayNotify']);
     // 1. 独立机器人 Webhook 接收端点 (接收 Telegram 官方消息推送)

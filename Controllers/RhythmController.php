@@ -41,6 +41,16 @@ class RhythmController extends PluginController
 
         // 计算实时体力
         $staminaData = $staminaService->getRealtimeStamina($ryUser, $this->getConfig());
+        // 1. 读取后台配置的 Markdown
+        $tutorialMd = (string)$this->getConfig('tutorial_markdown', '');
+
+        // 2. 如果后台配置为空，直接读取插件本地 resources/tutorial.md 真实原文件！
+        if (empty(trim($tutorialMd))) {
+            $localMdPath = __DIR__ . '/../resources/tutorial.md';
+            if (file_exists($localMdPath)) {
+                $tutorialMd = file_get_contents($localMdPath);
+            }
+        }
 
         // 核心替换点：返回给前端的数据包 (加入了 monthly_pass 详情)
         return $this->success([
@@ -56,7 +66,8 @@ class RhythmController extends PluginController
             ],
             'stamina_info' => $staminaData,
             'bound_osu' => $ryUser->osu_uid,
-            'bound_maimai' => $ryUser->maimai_id
+            'bound_maimai' => $ryUser->maimai_id,
+            'tutorial_markdown' => $tutorialMd // 真实回传
         ]);
     }
 
@@ -597,8 +608,13 @@ class RhythmController extends PluginController
 
             // 生成专属订单流水号 (带插件标识，不进 Xboard 原生套餐订单表)
             $outTradeNo = 'PASS_' . $userId . '_' . time();
-            $notifyUrl = url('/api/v1/rhythm-gacha/pass/epay/notify');
-            $returnUrl = url('/gacha.html');
+
+            // 核心改造：读取后台自定义回调 Base URL，留空则自动回退到当前站点 url()
+            $customBaseUrl = trim((string)$this->getConfig('callback_base_url', ''));
+            $baseUrl = !empty($customBaseUrl) ? rtrim($customBaseUrl, '/') : rtrim(url('/'), '/');
+
+            $notifyUrl = "{$baseUrl}/api/v1/rhythm-gacha/pass/epay/notify";
+            $returnUrl = "{$baseUrl}/api/v1/rhythm-gacha/app";
 
             $epayConfig = $payment->config;
             $params = [
@@ -753,5 +769,100 @@ class RhythmController extends PluginController
             'Content-Type' => $mime,
             'Cache-Control' => 'public, max-age=86400'
         ]);
+    }
+    /**
+     * 18. 生成落雪官网 OAuth 授权链接
+     */
+    public function getLxnsAuthorizeUrl(Request $request)
+    {
+        if ($error = $this->beforePluginAction()) return $error[1];
+
+        $clientId = $this->getConfig('lxns_oauth_client_id');
+        if (!$clientId) {
+            return $this->fail([400, "管理员未配置落雪 lxns_oauth_client_id，请改用直接填写个人Token或好友码！"]);
+        }
+
+        $userId = $request->user()->id;
+        $customBaseUrl = trim((string)$this->getConfig('callback_base_url', ''));
+        $baseUrl = !empty($customBaseUrl) ? rtrim($customBaseUrl, '/') : rtrim(url('/'), '/');
+        $redirectUri = "{$baseUrl}/api/v1/rhythm-gacha/oauth/lxns/callback";
+
+        $params = http_build_query([
+            'client_id'     => $clientId,
+            'redirect_uri'  => $redirectUri,
+            'response_type' => 'code',
+            'scope'         => 'read_user read_scores',
+            'state'         => base64_encode(json_encode(['user_id' => $userId]))
+        ]);
+
+        return $this->success([
+            'url' => "https://maimai.lxns.net/oauth/authorize?{$params}"
+        ]);
+    }
+
+    /**
+     * 19. 落雪 OAuth 官网授权回调处理
+     */
+    public function handleLxnsCallback(Request $request)
+    {
+        $code = $request->input('code');
+        $state = json_decode(base64_decode($request->input('state', '')), true);
+        $userId = $state['user_id'] ?? null;
+
+        if (!$code || !$userId) {
+            return response("落雪授权参数失效，请重新发起绑定", 400);
+        }
+
+        try {
+            $clientId = $this->getConfig('lxns_oauth_client_id');
+            $clientSecret = $this->getConfig('lxns_oauth_client_secret');
+            $customBaseUrl = trim((string)$this->getConfig('callback_base_url', ''));
+            $baseUrl = !empty($customBaseUrl) ? rtrim($customBaseUrl, '/') : rtrim(url('/'), '/');
+            $redirectUri = "{$baseUrl}/api/v1/rhythm-gacha/oauth/lxns/callback";
+
+            // 1. 换取 Token
+            $tokenRes = \Illuminate\Support\Facades\Http::asForm()->post('https://maimai.lxns.net/oauth/token', [
+                'client_id'     => $clientId,
+                'client_secret' => $clientSecret,
+                'code'          => $code,
+                'grant_type'    => 'authorization_code',
+                'redirect_uri'  => $redirectUri
+            ]);
+
+            if (!$tokenRes->successful()) {
+                return response("换取落雪 Token 失败: " . $tokenRes->body(), 400);
+            }
+
+            $userToken = $tokenRes->json('access_token');
+
+            // 2. 获取玩家资料
+            $driver = new \Plugin\RhythmGacha\Services\Game\MaimaiDriver();
+            $profile = $driver->verifyAndGetProfile($userToken);
+
+            // 3. 永久绑定个人 Token 入库
+            $ryUser = \Plugin\RhythmGacha\Models\RyUser::firstOrCreate(['user_id' => $userId]);
+            $ryUser->maimai_id = $userToken;
+            $ryUser->save();
+
+            return response("
+                <!DOCTYPE html><html><head><meta charset='UTF-8'></head>
+                <body style='background:#0f172a;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;'>
+                    <div style='text-align:center;'>
+                        <h2 style='color:#38bdf8;'>🎉 落雪查分器授权成功！</h2>
+                        <p style='color:#94a3b8;'>已关联玩家: <strong>{$profile['nickname']}</strong> (Rating: {$profile['rating']})</p>
+                        <script>
+                            if (window.opener) {
+                                window.opener.postMessage({ type: 'MAIMAI_AUTH_SUCCESS', nickname: '{$profile['nickname']}', rating: '{$profile['rating']}' }, '*');
+                                setTimeout(() => window.close(), 1200);
+                            } else {
+                                setTimeout(() => window.location.href = '/api/v1/rhythm-gacha/app', 1500);
+                            }
+                        </script>
+                    </div>
+                </body></html>
+            ");
+        } catch (\Exception $e) {
+            return response("落雪绑定异常: " . $e->getMessage(), 500);
+        }
     }
 }

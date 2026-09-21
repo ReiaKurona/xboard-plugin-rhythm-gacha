@@ -771,7 +771,7 @@ class RhythmController extends PluginController
         ]);
     }
     /**
-     * 18. 生成落雪官网 OAuth 授权链接
+     * 18. 生成落雪官网 OAuth 授权链接 (严格对齐官方 SDK 作用域标准)
      */
     public function getLxnsAuthorizeUrl(Request $request)
     {
@@ -779,7 +779,7 @@ class RhythmController extends PluginController
 
         $clientId = $this->getConfig('lxns_oauth_client_id');
         if (!$clientId) {
-            return $this->fail([400, "管理员未配置落雪 lxns_oauth_client_id，请改用直接填写个人Token或好友码！"]);
+            return $this->fail([400, "管理员未配置落雪 lxns_oauth_client_id，请直接填写个人Token或好友码！"]);
         }
 
         $userId = $request->user()->id;
@@ -787,11 +787,14 @@ class RhythmController extends PluginController
         $baseUrl = !empty($customBaseUrl) ? rtrim($customBaseUrl, '/') : rtrim(url('/'), '/');
         $redirectUri = "{$baseUrl}/api/v1/rhythm-gacha/oauth/lxns/callback";
 
+        // 核心修复：落雪官方 SDK 真实标准 scope 为 read_user_profile 与 read_player
+        $scope = trim((string)$this->getConfig('lxns_oauth_scope', 'read_user_profile read_player'));
+
         $params = http_build_query([
             'client_id'     => $clientId,
             'redirect_uri'  => $redirectUri,
             'response_type' => 'code',
-            'scope'         => 'read_user read_scores',
+            'scope'         => $scope, // 修正为官方 SDK 权限: read_user_profile read_player
             'state'         => base64_encode(json_encode(['user_id' => $userId]))
         ]);
 
@@ -801,7 +804,7 @@ class RhythmController extends PluginController
     }
 
     /**
-     * 19. 落雪 OAuth 官网授权回调处理
+     * 19. 落雪 OAuth 官网授权回调处理 (彻底修复 Token 覆盖与 401 问题)
      */
     public function handleLxnsCallback(Request $request)
     {
@@ -820,48 +823,91 @@ class RhythmController extends PluginController
             $baseUrl = !empty($customBaseUrl) ? rtrim($customBaseUrl, '/') : rtrim(url('/'), '/');
             $redirectUri = "{$baseUrl}/api/v1/rhythm-gacha/oauth/lxns/callback";
 
-            // 1. 换取 Token
-            $tokenRes = \Illuminate\Support\Facades\Http::asForm()->post('https://maimai.lxns.net/oauth/token', [
+            // 1. 换取 Token 载荷
+            $tokenPayload = [
                 'client_id'     => $clientId,
                 'client_secret' => $clientSecret,
                 'code'          => $code,
                 'grant_type'    => 'authorization_code',
                 'redirect_uri'  => $redirectUri
-            ]);
+            ];
+
+            $headers = [
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                'Accept'     => 'application/json'
+            ];
+
+            // 优先请求 api/v0 端点，遇 404/405 则平滑重试根路径
+            $tokenRes = \Illuminate\Support\Facades\Http::timeout(10)
+                ->withHeaders($headers)
+                ->asJson()
+                ->post('https://maimai.lxns.net/api/v0/oauth/token', $tokenPayload);
+
+            if ($tokenRes->status() === 404 || $tokenRes->status() === 405) {
+                $tokenRes = \Illuminate\Support\Facades\Http::timeout(10)
+                    ->withHeaders($headers)
+                    ->asJson()
+                    ->post('https://maimai.lxns.net/oauth/token', $tokenPayload);
+            }
 
             if (!$tokenRes->successful()) {
+                \Log::error("落雪换取Token失败", ['status' => $tokenRes->status(), 'body' => $tokenRes->body()]);
                 return response("换取落雪 Token 失败: " . $tokenRes->body(), 400);
             }
 
-            $userToken = $tokenRes->json('access_token');
+            // 核心修复：精准兼容单层与嵌套 data 层级的 access_token，绝不再二次覆盖！
+            $tokenJson = $tokenRes->json();
+            \Log::info("落雪OAuth换取Token原始返回: " . json_encode($tokenJson, JSON_UNESCAPED_UNICODE));
 
-            // 2. 获取玩家资料
+            $rawAccessToken = $tokenJson['access_token'] 
+                           ?? $tokenJson['data']['access_token'] 
+                           ?? null;
+
+            if (empty($rawAccessToken)) {
+                return response("落雪返回数据未包含 access_token: " . $tokenRes->body(), 400);
+            }
+
+            // 显式打上 Bearer 标记
+            $authIdentifier = 'Bearer ' . $pureToken = trim($rawAccessToken);
+
+            // 2. 调取落雪驱动验证玩家资料
             $driver = new \Plugin\RhythmGacha\Services\Game\MaimaiDriver();
-            $profile = $driver->verifyAndGetProfile($userToken);
+            $profile = $driver->verifyAndGetProfile($authIdentifier);
 
-            // 3. 永久绑定个人 Token 入库
+            // 3. 永久绑定入库
             $ryUser = \Plugin\RhythmGacha\Models\RyUser::firstOrCreate(['user_id' => $userId]);
-            $ryUser->maimai_id = $userToken;
+            $ryUser->maimai_id = $authIdentifier;
             $ryUser->save();
 
             return response("
-                <!DOCTYPE html><html><head><meta charset='UTF-8'></head>
-                <body style='background:#0f172a;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;'>
-                    <div style='text-align:center;'>
-                        <h2 style='color:#38bdf8;'>🎉 落雪查分器授权成功！</h2>
-                        <p style='color:#94a3b8;'>已关联玩家: <strong>{$profile['nickname']}</strong> (Rating: {$profile['rating']})</p>
-                        <script>
-                            if (window.opener) {
-                                window.opener.postMessage({ type: 'MAIMAI_AUTH_SUCCESS', nickname: '{$profile['nickname']}', rating: '{$profile['rating']}' }, '*');
-                                setTimeout(() => window.close(), 1200);
-                            } else {
-                                setTimeout(() => window.location.href = '/api/v1/rhythm-gacha/app', 1500);
-                            }
-                        </script>
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='UTF-8'>
+                    <title>落雪授权成功</title>
+                </head>
+                <body style='background:#0f172a; color:#fff; font-family:system-ui, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0;'>
+                    <div style='text-align:center; padding:24px; background:#1e293b; border-radius:16px; border:1px solid #38bdf8;'>
+                        <div style='font-size:36px; margin-bottom:12px;'>🎉</div>
+                        <h2 style='margin:0 0 8px 0; color:#38bdf8;'>落雪查分器授权成功！</h2>
+                        <p style='color:#94a3b8; font-size:14px;'>已关联玩家: <strong style='color:#fff;'>{$profile['nickname']}</strong> (Rating: {$profile['rating']})</p>
+                        <p style='font-size:12px; color:#64748b; margin-top:16px;'>窗口将在 1 秒后自动关闭...</p>
                     </div>
-                </body></html>
+                    <script>
+                        if (window.opener) {
+                            try {
+                                window.opener.postMessage({ type: 'MAIMAI_AUTH_SUCCESS', nickname: '{$profile['nickname']}', rating: '{$profile['rating']}' }, '*');
+                            } catch(e) {}
+                            setTimeout(() => { window.close(); }, 1200);
+                        } else {
+                            setTimeout(() => { window.location.href = '/api/v1/rhythm-gacha/app'; }, 1500);
+                        }
+                    </script>
+                </body>
+                </html>
             ");
         } catch (\Exception $e) {
+            \Log::error("落雪绑定回调异常: " . $e->getMessage());
             return response("落雪绑定异常: " . $e->getMessage(), 500);
         }
     }

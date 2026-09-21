@@ -140,7 +140,7 @@ CREATE TABLE `ry_users` (
   `pity_4_up` int DEFAULT '0' COMMENT 'UP池4星垫抽数(逢10必出)',
   `is_next_up_guaranteed` tinyint(1) NOT NULL DEFAULT '0',
   `osu_uid` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `maimai_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `maimai_id` varchar(8192) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `last_osu_score_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `last_maimai_score_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `device_resolution_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '首次绑定的设备长宽乘积哈希',

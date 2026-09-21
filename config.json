@@ -1,7 +1,7 @@
 {
     "name": "Rhythm Gacha",
     "code": "rhythm_gacha",
-    "version": "1.0.53",
+    "version": "1.0.59",
     "description": "二次元赛博音游抽卡、体力与背包生态系统",
     "author": "Reia",
     "require": {

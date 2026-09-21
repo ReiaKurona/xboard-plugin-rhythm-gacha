@@ -459,17 +459,17 @@
     <!-- 资产数据矩阵 -->
     <div class="hud-assets">
       <div class="asset-slot">
-        <div class="asset-label">🌐 专线剩余流量</div>
+        <div class="asset-label">🌐 流量使用情况</div>
         <div class="asset-val" id="u-traffic" style="color: var(--accent);">- GB</div>
         <div style="font-size: 11px; color: var(--text-muted);" id="u-traffic-detail">已用 - / 总计 -</div>
       </div>
       <div class="asset-slot">
-        <div class="asset-label">💎 储备宝石</div>
+        <div class="asset-label">💎 宝石</div>
         <div class="asset-val" id="p-gems" style="color: var(--gold);">0</div>
         <div style="font-size: 11px; color: var(--text-muted);">用于祈愿跃迁抽卡</div>
       </div>
       <div class="asset-slot">
-        <div class="asset-label">⚡ 律动体力储备</div>
+        <div class="asset-label">⚡ 律动体力</div>
         <div class="asset-val" id="p-stamina" style="color: var(--green);">- / -</div>
         <div style="font-size: 11px; color: var(--text-muted);" id="p-stamina-timer">-</div>
       </div>
@@ -487,15 +487,15 @@
   <div class="event-stage-banner">
     <div class="stage-tag">SEASON EVENT 2026</div>
     <h1 class="stage-title">虚空共鸣 · 律动跃迁特别企划</h1>
-    <div style="font-size: 13px; color: var(--text-muted);">出勤打歌即可将操作判定转化为赛博算力！全自动对接 osu! 与 舞萌 DX 云端战绩。抽取五星限定专线特权与海量物资！</div>
+    <div style="font-size: 13px; color: var(--text-muted);">出勤打歌即可将操作判定转化为代理流量！全自动对接 osu! 、舞萌 DX 、Hololive Dreams 云端战绩。抽取五星限定专线特权与海量物资！</div>
   </div>
 
   <!-- 游戏主导航 -->
   <div class="game-nav">
-    <div class="nav-btn active" onclick="switchTab('gacha')">🎰 祈愿跃迁 (抽卡)</div>
-    <div class="nav-btn" onclick="switchTab('stages')">🎛️ 律动出勤 (音游绑定与同步)</div>
+    <div class="nav-btn active" onclick="switchTab('gacha')">🎰 祈愿跃迁 </div>
+    <div class="nav-btn" onclick="switchTab('stages')">🎛️ 律动出勤 (音游绑定&同步)</div>
     <div class="nav-btn" onclick="switchTab('backpack')">🧰 战术背包 (<span id="backpack-count">0</span>)</div>
-    <div class="nav-btn" onclick="switchTab('records')">📜 全量出勤纪要</div>
+    <div class="nav-btn" onclick="switchTab('records')">📜 游玩历史成绩记录</div>
   </div>
 
   <!-- 视图 1: 祈愿抽卡 -->
@@ -528,7 +528,7 @@
   <!-- 视图 2: 出勤舞台 -->
   <div id="view-stages" style="display: none;">
     <div class="gacha-pool-box">
-      <h3 style="margin-top: 0;">🎛️ 音游出勤舞台</h3>
+      <h3 style="margin-top: 0;">🎛️ 音游出勤舞台-绑定游戏&同步</h3>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
         
          <!-- 1. 舞萌 DX (边框加固修复) -->
@@ -536,7 +536,7 @@
           <div>
             <div style="display: flex; justify-content: space-between; font-weight: bold; color: var(--accent); margin-bottom: 8px;">
               <span>舞萌 DX (落雪咖啡屋)</span>
-              <span style="font-size: 11px; cursor: pointer; color: var(--accent);" onclick="startLxnsOAuth()">🔗 官网授权</span>
+              <span style="font-size: 11px; cursor: pointer; color: var(--accent);" onclick="startLxnsOAuth()">🔗 点此跳转落雪授权</span>
             </div>
             <input type="text" id="bind-maimai" placeholder="个人 API 密钥 / 15位好友码" style="width: 100%; margin-bottom: 10px;">
           </div>
@@ -551,7 +551,7 @@
           <div>
             <div style="display: flex; justify-content: space-between; font-weight: bold; color: #818cf8; margin-bottom: 8px;">
               <span>📸 hololive 截图出勤</span>
-              <span style="font-size: 11px; color: var(--gold);">⚡ 60s 内存防伪</span>
+              <span style="font-size: 11px; color: var(--gold);">AI自动审核禁止作弊！</span>
             </div>
             <input type="file" id="holo-file" accept="image/png" style="width: 100%; margin-bottom: 10px; font-size: 12px; padding: 6px;">
           </div>
@@ -566,7 +566,7 @@
           <div>
             <div style="display: flex; justify-content: space-between; font-weight: bold; color: #ff66aa; margin-bottom: 8px;">
               <span>osu! (官方账号)</span>
-              <span style="font-size: 11px; cursor: pointer; color: #ff66aa;" onclick="startOsuOAuth()">🔗 官方授权</span>
+              <span style="font-size: 11px; cursor: pointer; color: #ff66aa;" onclick="startOsuOAuth()">🔗 点此跳转官方授权</span>
             </div>
             <input type="text" id="bind-osu" placeholder="输入用户名或数字 UID" style="width: 100%; margin-bottom: 10px;">
           </div>
@@ -582,12 +582,12 @@
       <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div style="display: flex; gap: 10px; align-items: center;">
           <select id="sync-game-type" style="width: 220px;">
-            <option value="osu">osu! (近 24 小时成绩)</option>
-            <option value="maimai">舞萌 DX (水鱼查分器)</option>
+            <option value="osu">osu! </option>
+            <option value="maimai">舞萌 DX </option>
           </select>
-          <button class="btn-warp" style="padding: 10px 20px; font-size: 14px;" onclick="handleSyncScore()">⚡ 发起成绩核算</button>
+          <button class="btn-warp" style="padding: 10px 20px; font-size: 14px;" onclick="handleSyncScore()">⚡ 手动同步成绩</button>
         </div>
-        <div style="font-size: 12px; color: var(--text-muted);">💡 消耗 1 点体力。体力不足时强制记录但不发钻 (防囤积)。</div>
+        <div style="font-size: 12px; color: var(--text-muted);">💡 将消耗对应点数体力。体力不足时记录但不发钻。</div>
       </div>
     </div>
   </div>
@@ -597,7 +597,7 @@
     <div class="gacha-pool-box">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h3 style="margin: 0;">🧰 战术物资仓库</h3>
-        <button style="background: #1e293b; font-size: 12px;" onclick="loadBackpack()">刷新仓库</button>
+        <button style="background: #1e293b; font-size: 12px;" onclick="loadBackpack()">刷新</button>
       </div>
       <div id="backpack-list"></div>
     </div>
@@ -737,7 +737,7 @@
   const GACHA_VIDEO_URL = "/api/v1/rhythm-gacha/asset/gacha.mp4";
 
   // ⭐ 核心优化：右下角极客悬浮加载 HUD 控制
-  function showLoading(text = "正在连线中枢网络...") {
+  function showLoading(text = "正在连线网络...") {
     document.getElementById('corner-loading-text').innerText = text;
     document.getElementById('corner-loading').classList.add('active');
   }
@@ -1067,7 +1067,7 @@
     document.getElementById('modal-title').innerText = '物资核销确认';
     document.getElementById('modal-desc').innerHTML = `
       确定要使用 <strong style="color: #fff;">${it.name}</strong> 吗？<br>
-      将从区间 <strong style="color: var(--gold);">${it.value_min}~${it.value_max} MB</strong> 随机抽取高速流量直接注入专线。
+      将从区间 <strong style="color: var(--gold);">${it.value_min}~${it.value_max} MB</strong> 随机抽取流量。
     `;
     document.getElementById('modal-confirm-btn').onclick = () => executeRedeem(id);
     document.getElementById('redeem-modal').style.display = 'flex';
@@ -1248,14 +1248,14 @@
     document.getElementById('score-detail-modal').style.display = 'none';
   }
 
-  // 截图上传
+  // 截图上传核验 (修复多层 data 导致的 undefined 弹窗提示)
   async function uploadHoloScreenshot() {
     const file = document.getElementById('holo-file').files[0];
     if (!file) return alert("请选择 PNG 原图！");
     const formData = new FormData();
     formData.append('screenshot', file);
 
-    showLoading('正在进行多模态安全审计...');
+    showLoading('正在进行多模态防伪审核 (预计 20秒)...');
     try {
       const res = await fetch('/api/v1/rhythm-gacha/hololive/audit', {
         method: 'POST',
@@ -1263,8 +1263,17 @@
         body: formData
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      alert(`🎉 审核通过！达成 ${data.data?.rank} 级，入账 +${data.data?.gems_earned} 宝石！`);
+      
+      // 容错取到后端最深层的业务数据包
+      const payload = data.data?.data || data.data || data;
+      const successMsg = data.data?.message || data.message || `🎉 审核通过！达成 ${payload.rank || 'S'} 级，入账 +${payload.gems_earned || 0} 宝石！`;
+
+      if (!res.ok) throw new Error(data.message || '核验未通过');
+
+      // 弹出清晰完整的成功提示
+      alert(successMsg);
+      document.getElementById('holo-file').value = '';
+      
       loadPluginInfo();
       loadRecordLogs();
     } catch(e) {

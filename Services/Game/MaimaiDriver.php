@@ -114,75 +114,118 @@ class MaimaiDriver implements GameDriverInterface
         ];
     }
 
-    /**
-     * 多途径拉取成绩 (支持个人 API Token 或 好友码+DevToken)
-     */
     private function fetchScoresFromLxns(string $identifier, string $devToken): array
     {
-        // 途径 A：输入的是个人 API 密钥 (X-User-Token)
-        if (strlen($identifier) >= 30 && !is_numeric($identifier)) {
-            $res = Http::timeout(10)->withHeaders([
-                'X-User-Token' => $identifier,
-                'Accept'       => 'application/json'
-            ])->get("{$this->baseUrl}/user/maimai/player/scores");
+        $baseHeaders = [
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'Accept'     => 'application/json'
+        ];
+
+        // 途径 A：Token 查询 (兼容 OAuth Bearer 与 个人 X-User-Token)
+        if (strlen($identifier) >= 20 && !is_numeric($identifier)) {
+            $pureToken = preg_replace('/^Bearer\s+/i', '', $identifier);
+
+            // 先试 OAuth Bearer 方式
+            $res = Http::timeout(10)->withHeaders(array_merge($baseHeaders, [
+                'Authorization' => 'Bearer ' . $pureToken
+            ]))->get("{$this->baseUrl}/user/maimai/player/scores");
 
             if ($res->successful()) {
                 return $res->json('data') ?? [];
             }
-            Log::warning("落雪个人API查询失败: " . $res->body());
+
+            // 再试 X-User-Token 方式
+            $res = Http::timeout(10)->withHeaders(array_merge($baseHeaders, [
+                'X-User-Token' => $pureToken
+            ]))->get("{$this->baseUrl}/user/maimai/player/scores");
+
+            if ($res->successful()) {
+                return $res->json('data') ?? [];
+            }
+            Log::warning("落雪获取成绩失败", ['status' => $res->status(), 'body' => $res->body()]);
         }
 
-        // 途径 B：输入的是好友码 (15位数字) 或 QQ号，且后台配置了 Developer Token
+        // 途径 B：开发者好友码查询
         if (!empty($devToken)) {
-            // 如果是纯数字
-            $endpoint = is_numeric($identifier) && strlen($identifier) <= 11 
+            $endpoint = (is_numeric($identifier) && strlen($identifier) <= 11)
                 ? "{$this->baseUrl}/maimai/player/qq/{$identifier}" 
                 : "{$this->baseUrl}/maimai/player/{$identifier}/recents";
 
-            // 如果查的是 QQ，先查出好友码
             if (str_contains($endpoint, '/qq/')) {
-                $pRes = Http::timeout(8)->withHeaders(['Authorization' => $devToken])->get($endpoint);
+                $pRes = Http::timeout(8)->withHeaders(array_merge($baseHeaders, ['Authorization' => $devToken]))->get($endpoint);
                 if ($pRes->successful() && $pRes->json('data.friend_code')) {
                     $friendCode = $pRes->json('data.friend_code');
                     $endpoint = "{$this->baseUrl}/maimai/player/{$friendCode}/recents";
                 }
             }
 
-            $res = Http::timeout(10)->withHeaders([
-                'Authorization' => $devToken,
-                'Accept'        => 'application/json'
-            ])->get($endpoint);
+            $res = Http::timeout(10)->withHeaders(array_merge($baseHeaders, [
+                'Authorization' => $devToken
+            ]))->get($endpoint);
 
             if ($res->successful()) {
                 return $res->json('data') ?? [];
             }
-            Log::warning("落雪开发者API查询失败: " . $res->body());
         }
 
         return [];
     }
 
     /**
-     * 绑定前验明正身 (携带合法浏览器 UA，并透传落雪真实错误)
+     * 绑定前验明正身 (多端点自动探测与原版错误透传)
      */
     public function verifyAndGetProfile(string $identifier): array
     {
         $plugin = app(\App\Services\Plugin\PluginManager::class)->getEnabledPlugins()['rhythm_gacha'] ?? null;
         $devToken = $plugin ? trim((string)$plugin->getConfig('lxns_developer_token', '')) : '';
 
-        // 统一浏览器请求头，防止被 Cloudflare WAF 阻断
-        $headers = [
+        $baseHeaders = [
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
             'Accept'     => 'application/json'
         ];
 
-        // 途径 A：个人 API Token (X-User-Token)
-        if (strlen($identifier) >= 30 && !is_numeric($identifier)) {
-            $headers['X-User-Token'] = $identifier;
-            $res = Http::timeout(10)->withHeaders($headers)->get("{$this->baseUrl}/user/maimai/player");
+        // 途径 A：长字符串 Token (兼容 OAuth Access Token 与 个人 X-User-Token)
+        if (strlen($identifier) >= 20 && !is_numeric($identifier)) {
+            $pureToken = trim(preg_replace('/^Bearer\s+/i', '', $identifier));
 
-            if ($res->successful()) {
-                $d = $res->json('data') ?? [];
+            // 端点探测列表 (优先尝试玩家接口，兜底尝试基础用户接口)
+            $endpoints = [
+                "{$this->baseUrl}/user/maimai/player",
+                "{$this->baseUrl}/user/profile",
+                "{$this->baseUrl}/user/info",
+                "{$this->baseUrl}/user"
+            ];
+
+            $lastError = '';
+            $lastStatus = 401;
+
+            // 1. 尝试以 OAuth Bearer Token 方式请求各端点
+            foreach ($endpoints as $url) {
+                $res = Http::timeout(8)->withHeaders(array_merge($baseHeaders, [
+                    'Authorization' => 'Bearer ' . $pureToken
+                ]))->get($url);
+
+                if ($res->successful()) {
+                    $d = $res->json('data') ?? $res->json() ?? [];
+                    return [
+                        'nickname'    => $d['name'] ?? $d['nickname'] ?? $d['username'] ?? '理论值',
+                        'rating'      => $d['rating'] ?? 0,
+                        'friend_code' => $d['friend_code'] ?? 0
+                    ];
+                }
+
+                $lastStatus = $res->status();
+                $lastError = $res->body();
+                \Log::warning("落雪OAuth探测端点 [{$url}] 失败: {$lastStatus} - {$lastError}");
+            }
+
+            // 2. 如果 Bearer 失败，尝试作为个人 API 密钥 (X-User-Token) 访问
+            $pRes = Http::timeout(8)->withHeaders(array_merge($baseHeaders, [
+                'X-User-Token' => $pureToken
+            ]))->get("{$this->baseUrl}/user/maimai/player");
+
+            if ($pRes->successful()) {
+                $d = $pRes->json('data') ?? [];
                 return [
                     'nickname'    => $d['name'] ?? '理论值',
                     'rating'      => $d['rating'] ?? 0,
@@ -190,27 +233,18 @@ class MaimaiDriver implements GameDriverInterface
                 ];
             }
 
-            // 核心排错：透传落雪官方真实报错！
-            $status = $res->status();
-            $msg = $res->json('message') ?? $res->body();
-
-            if ($status === 404 || str_contains($msg, 'not found')) {
-                throw new Exception("落雪查分器未找到您的玩家档案 (404)！请先在落雪网页端导入一次舞萌战绩！");
-            }
-            if ($status === 401) {
-                throw new Exception("落雪 Token 鉴权失败 (401)！请确认 Token 是否填写完整或重新生成。");
-            }
-            throw new Exception("落雪接口异常 [{$status}]: {$msg}");
+            // 核心透出：把落雪返回的原版报错直接抛给前端查看！
+            throw new Exception("落雪服务器返回 [HTTP {$lastStatus}]: " . $lastError);
         }
 
         // 途径 B：好友码 / QQ
         if (!empty($devToken)) {
-            $headers['Authorization'] = $devToken;
+            $headers = array_merge($baseHeaders, ['Authorization' => $devToken]);
             $endpoint = (is_numeric($identifier) && strlen($identifier) <= 11)
                 ? "{$this->baseUrl}/maimai/player/qq/{$identifier}"
                 : "{$this->baseUrl}/maimai/player/{$identifier}";
 
-            $res = Http::timeout(10)->withHeaders($headers)->get($endpoint);
+            $res = Http::timeout(8)->withHeaders($headers)->get($endpoint);
 
             if ($res->successful()) {
                 $d = $res->json('data') ?? [];
@@ -220,11 +254,10 @@ class MaimaiDriver implements GameDriverInterface
                     'friend_code' => $d['friend_code'] ?? 0
                 ];
             }
-            $msg = $res->json('message') ?? "HTTP " . $res->status();
-            throw new Exception("落雪开发者接口返回: {$msg}");
+            throw new Exception("落雪开发者接口返回: " . $res->body());
         }
 
-        throw new Exception("未检测到有效个人 Token。若使用好友码，请提醒管理员在后台配置 Developer Token！");
+        throw new Exception("未检测到有效 Token。若使用好友码，请确保后台已配置落雪 Developer Token！");
     }
 
     private function calculateLevel(float $achievements, string $rateStr): int
